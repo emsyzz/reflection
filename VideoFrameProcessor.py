@@ -26,6 +26,11 @@ class VideoFrameProcessor:
         self.processedFrame = cv2.resize(self.originalFrame, dim, interpolation=cv2.INTER_LINEAR)
         print('Resized img to width : ', self.processedFrame.shape)
 
+    def add_dot_in_meridian(self):
+        row = self.originalFrame.shape[1] / 2
+        col = self.originalFrame.shape[0] / 2
+        cv2.circle(self.processedFrame, (row, col), 5, (0, 255, 0), -1)
+
     def show_processed_frame(self, frame_name):
         try:
             cv2.imshow(frame_name, self.processedFrame)

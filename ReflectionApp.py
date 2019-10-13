@@ -1,13 +1,15 @@
 import cv2
 from imutils.video import FPS
 
-from DnnFaceDetector import DnnFaceDetector, RectCoordinates
+from DnnFaceDetector import DnnFaceDetector
+from SearchingFaceAreaProvider import SearchingFaceAreaProvider
 from VideoFrameProcessor import VideoFrameProcessor
 
 
 class ReflectionApp:
     def __init__(self, videoCapture):
         self.__video_capture = videoCapture
+        self.__fd = DnnFaceDetector()
 
     def showProcessedVideo(self, maxWidth):
         fps = FPS().start()
@@ -20,8 +22,7 @@ class ReflectionApp:
         self.height = self.__video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
         img_fps = self.__video_capture.get(cv2.CAP_PROP_FPS)
 
-        starting_face_search_area = self.__face_searching_area()
-        self.__fd = DnnFaceDetector(starting_face_search_area)
+        sfad = SearchingFaceAreaProvider(self.width, self.height)
 
         # Read until video is completed
         while (self.__video_capture.isOpened()):
@@ -29,18 +30,23 @@ class ReflectionApp:
             ret, frame = self.__video_capture.read()
             if ret == True:
 
-                self.__fd.detect_face(frame)
+                face_searching_frame = sfad.face_searching_frame(frame)
+                vfp = VideoFrameProcessor(face_searching_frame)
+                vfp.show_processed_frame("face_searching_area")
 
-                vfp = VideoFrameProcessor(self.__fd.face_searching_frame)
-                # vfp.show_processed_frame("face_searching_area")
-                # self.__fd.detectFace(frame)
+                self.__fd.detect_face(face_searching_frame)
 
                 # cv2.rectangle(frame, (x_, y_), (x_ + w_, y_ + h_), (0, 255, 0), 3)
                 # self.__debug_full_img(frame)
 
-                if self.__fd.isDetectedFace:
-                    vfp = VideoFrameProcessor(self.__fd.lastDetectedFace)
+                if self.__fd.is_detected_face:
+                    detected_face_area = self.__fd.detected_face_area
+                    vfp = VideoFrameProcessor(detected_face_area.get_frame(face_searching_frame))
+                    vfp.add_dot_in_meridian()
                     vfp.show_processed_frame("Detected face")
+                    sfad.update_next_searching_frame(detected_face_area)
+                else:
+                    sfad.update_not_found_face()
 
                 # update the FPS counter
                 fps.update()
@@ -63,13 +69,6 @@ class ReflectionApp:
 
         # Closes all the frames
         cv2.destroyAllWindows()
-
-    def __face_searching_area(self):
-        h = int(self.height / 3)
-        y = int(self.height / 3)
-        w = int(self.width / 3)
-        x = int(self.width / 3)
-        return RectCoordinates(x, y, w, h)
 
     def __debug_full_img(self, frame, wanted_frame_width=800):
         vfp = VideoFrameProcessor(frame)
