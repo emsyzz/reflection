@@ -32,15 +32,15 @@ class SearchingFaceAreaProvider:
 
     def __calc_next_searching_area(self, rect):
         start_x = self.face_searching_area.startX + rect.startX - rect.w
-        if start_x < 0:
-            start_x = 0
         start_y = self.face_searching_area.startY + rect.startY - rect.h / 2
+        end_x = rect.w * 3
+        end_y = rect.h * 2
         if start_y < 0:
             start_y = 0
-        end_x = rect.w * 3
+        if start_x < 0:
+            start_x = 0
         if end_x > self.full_frame_width:
             end_x = self.full_frame_width
-        end_y = rect.h * 2
         if end_y > self.full_frame_height:
             end_y = self.full_frame_height
         return RectCoordinates(start_x, start_y, end_x, end_y)
