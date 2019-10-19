@@ -27,8 +27,8 @@ class VideoFrameProcessor:
         print('Resized img to width : ', self.processedFrame.shape)
 
     def add_dot_in_meridian(self):
-        row = self.originalFrame.shape[1] / 2
-        col = self.originalFrame.shape[0] / 2
+        row = int(self.originalFrame.shape[1] / 2)
+        col = int(self.originalFrame.shape[0] / 2)
         cv2.circle(self.processedFrame, (row, col), 5, (0, 255, 0), -1)
 
     def show_processed_frame(self, frame_name):
