@@ -1,5 +1,4 @@
 import sys
-
 import cv2
 
 
@@ -26,6 +25,12 @@ class VideoFrameProcessor:
         # INTER_LINEAR is faster than INTER_AREA
         self.processedFrame = cv2.resize(self.originalFrame, dim, interpolation=cv2.INTER_LINEAR)
         print('Resized img to width : ', self.processedFrame.shape)
+
+    def add_face_landmarks(self, landmarks):
+        for n in range(0, landmarks.num_parts):
+            x = landmarks.part(n).x
+            y = landmarks.part(n).y
+            cv2.circle(self.processedFrame, (x, y), 2, (255, 0, 0), -1)
 
     def add_dot_in_meridian(self):
         row = int(self.originalFrame.shape[1] / 2)
