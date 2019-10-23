@@ -16,12 +16,13 @@ class VideoFrameProcessor:
     def resize_to_width(self, wanted_frame_width):
         width = self.originalFrame.shape[1]
         height = self.originalFrame.shape[0]
-        wanted_frame_height = height * wanted_frame_width / width
+        wanted_frame_height = int(height * wanted_frame_width / width)
 
         self.__resize(wanted_frame_height, wanted_frame_width)
 
     def __resize(self, wanted_frame_height, wanted_frame_width):
         dim = (wanted_frame_width, wanted_frame_height)
+        self.dim = dim
         # INTER_LINEAR is faster than INTER_AREA
         self.processedFrame = cv2.resize(self.originalFrame, dim, interpolation=cv2.INTER_LINEAR)
         print('Resized img to width : ', self.processedFrame.shape)
@@ -31,8 +32,13 @@ class VideoFrameProcessor:
         col = int(self.originalFrame.shape[0] / 2)
         cv2.circle(self.processedFrame, (row, col), 5, (0, 255, 0), -1)
 
-    def show_processed_frame(self, frame_name):
+    def show_processed_frame(self, frame_name, outline=None):
         try:
-            cv2.imshow(frame_name, self.processedFrame)
+            if outline is not None:
+                rect, color = outline
+                cv2.rectangle(self.originalFrame, rect.get_start_xy(), rect.get_end_xy(), color, 2)
+                cv2.imshow(frame_name, self.originalFrame)
+            else:
+                cv2.imshow(frame_name, self.processedFrame)
         except:  # catch *all* exceptions
             e = sys.exc_info()[0]

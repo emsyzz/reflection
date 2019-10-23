@@ -5,16 +5,17 @@ class SearchingFaceAreaProvider:
     def __init__(self, full_frame_width, full_frame_height):
         self.full_frame_width = full_frame_width
         self.full_frame_height = full_frame_height
+        self.initial_area_scale = 1.5
         self.initial_face_searching_area = self.__initial_face_searching_area()
         self.face_searching_area = self.initial_face_searching_area
         self.not_found_faces_in_a_row = 0
         self.max_unfound_faces_before_area_reset = 15
 
     def __initial_face_searching_area(self):
-        h = int(self.full_frame_height / 3)
-        y = int(self.full_frame_height / 3)
-        w = int(self.full_frame_width / 3)
-        x = int(self.full_frame_width / 3)
+        h = int(self.full_frame_height / self.initial_area_scale)
+        y = int((self.full_frame_height - h) / 2)
+        w = int(self.full_frame_width / self.initial_area_scale)
+        x = int((self.full_frame_width - w) / 2)
         return RectCoordinates(x, y, w, h)
 
     def face_searching_frame(self, frame):

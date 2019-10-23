@@ -31,13 +31,10 @@ class ReflectionApp:
             if ret == True:
 
                 face_searching_frame = sfad.face_searching_frame(frame)
-                vfp = VideoFrameProcessor(face_searching_frame)
-                vfp.show_processed_frame("face_searching_area")
+                vfp = VideoFrameProcessor(frame)
+                vfp.show_processed_frame("Face searching area", (sfad.face_searching_area, (0, 255, 0)))
 
                 self.__fd.detect_face(face_searching_frame)
-
-                # cv2.rectangle(frame, (x_, y_), (x_ + w_, y_ + h_), (0, 255, 0), 3)
-                # self.__debug_full_img(frame)
 
                 if self.__fd.is_detected_face:
                     detected_face_area = self.__fd.detected_face_area
