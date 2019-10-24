@@ -9,17 +9,15 @@ class ThreadedImageGrabber:
         self.stream = cv2.VideoCapture(src)
         (self.grabbed, self.frame) = self.stream.read()
         self.stopped = False
+        self.__thread = None
 
     def start(self):
-        threading.Thread(target=self.grab, args=()).start()
+        self.__thread = threading.Thread(target=self.grab, args=())
+        self.__thread.start()
         return self
 
     def grab(self):
         while not self.stopped:
-            if cv2.waitKey(25) & 0xFF == ord('q'):
-                self.stop()
-                break
-
             if not self.grabbed:
                 self.stop()
             else:
@@ -27,3 +25,4 @@ class ThreadedImageGrabber:
 
     def stop(self):
         self.stopped = True
+        self.__thread.join()
