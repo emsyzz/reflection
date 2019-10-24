@@ -109,3 +109,4 @@ venv.bak/
 # IDE
 .idea/*
 !.idea/runConfigurations
+samples/
