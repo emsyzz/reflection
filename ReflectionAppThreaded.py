@@ -2,9 +2,12 @@ from FaceDetectingGrabber import FaceDetectingGrabber
 from FaceSearchingAreaGrabber import FaceSearchingAreaGrabber
 from ThreadedImageShower import ThreadedImageShower
 
+DETECTED_FACE_WINDOW = "Detected face"
+FACE_SEARCHING_AREA_WINDOW = "Face searching area"
+
 
 def threadVideoGet(source=0):
-    windows_shower = ThreadedImageShower({"Face searching area": None, "Detected face": None}).start()
+    windows_shower = ThreadedImageShower({FACE_SEARCHING_AREA_WINDOW: None, DETECTED_FACE_WINDOW: None}).start()
 
     image_grabber = FaceSearchingAreaGrabber(source).start()
 
@@ -31,10 +34,10 @@ def threadVideoGet(source=0):
 
             break
 
-        windows_shower.update_window("Face searching area", image_grabber.read_whole_frame())
+        windows_shower.update_window(FACE_SEARCHING_AREA_WINDOW, image_grabber.read_whole_frame())
 
         if image_processor_enabled:
-            windows_shower.update_window("Detected face", processed_image_grabber.read_frame())
+            windows_shower.update_window(DETECTED_FACE_WINDOW, processed_image_grabber.read_frame())
             if image_grabber.read_extracted_frame() is not None:
                 processed_image_grabber.update_source_frame(image_grabber.read_extracted_frame().copy())
 
