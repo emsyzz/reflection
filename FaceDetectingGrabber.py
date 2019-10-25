@@ -4,35 +4,46 @@ import time
 import cv2
 import dlib
 import numpy as np
+from dlib import shape_predictor
 
-from DnnFaceDetector import DnnFaceDetector
+from DnnFaceDetector import DnnFaceDetector, DetectedFace
+
+
+class DetectedObject:
+    detected_face: DetectedFace
+    output_frame: np.ndarray
+
+    def __init__(self, face_frame: np.ndarray, detected_face: DetectedFace) -> None:
+        self.output_frame = face_frame
+        self.detected_face = detected_face
 
 
 class FaceDetectingGrabber:
+    stopped: bool = False
+    __source_frame: np.ndarray
 
-    def __init__(self, source_frame=None):
+    __detected_object: DetectedObject
+
+    __thread: threading.Thread
+    __write_lock: threading.Lock = threading.Lock()
+    __predictor: shape_predictor = dlib.shape_predictor('face_detection_model/shape_predictor_68_face_landmarks.dat')
+    __fd: DnnFaceDetector = DnnFaceDetector()
+
+    def __init__(self, source_frame: np.ndarray):
         self.__source_frame = source_frame
-        self.__output_frame = None
-        self.stopped = False
-        self.__detected_face_area = None
-        self.__face_found = False
 
-        self.__fd = DnnFaceDetector()
-        self.__predictor = dlib.shape_predictor('face_detection_model/shape_predictor_68_face_landmarks.dat')
-        self.__thread = None
-        self.__write_lock = threading.Lock()
-        self.__read_lock = threading.Lock()
-
-    def start(self):
+    def start(self) -> 'FaceDetectingGrabber':
+        detected_face = self.__fd.detect_face(self.__source_frame)
+        self.__detected_object = self.create_undetected_face_object(detected_face)
         self.__thread = threading.Thread(target=self.grab, args=())
         self.__thread.start()
         return self
 
-    def stop(self):
+    def stop(self) -> None:
         self.stopped = True
         self.__thread.join()
 
-    def grab(self):
+    def grab(self) -> None:
         start_time = time.time()
         x = 1  # displays the frame rate every 1 second
         counter = 0
@@ -42,10 +53,10 @@ class FaceDetectingGrabber:
                     continue
                 source_frame = self.__source_frame.copy()
 
-            self.__fd.detect_face(source_frame)
+            detected_face = self.__fd.detect_face(source_frame)
 
-            if self.__fd.is_detected_face:
-                detected_face_area = self.__fd.detected_face_area
+            if detected_face.is_face_detected:
+                detected_face_area = detected_face.detected_face_area
 
                 face_frame = detected_face_area.get_frame(source_frame)
 
@@ -58,32 +69,10 @@ class FaceDetectingGrabber:
                 landmarks = self.__predictor(face_frame, face)
                 self.__add_face_landmarks(face_frame, landmarks)
 
-                with self.__read_lock:
-                    self.__output_frame = face_frame
-                    self.__face_found = True
-                    self.__detected_face_area = detected_face_area
+                self.__detected_object = DetectedObject(face_frame, detected_face)
             else:
-                text_frame = np.zeros((100, 100, 3), np.uint8)
-
-                # Write some Text
-
-                font = cv2.FONT_HERSHEY_SIMPLEX
-                bottom_left_corner_of_text = (10, 30)
-                font_scale = 1
-                font_color = (0, 0, 255)
-                line_type = 2
-
-                cv2.putText(text_frame, 'X',
-                            bottom_left_corner_of_text,
-                            font,
-                            font_scale,
-                            font_color,
-                            line_type)
-
-                with self.__read_lock:
-                    self.__output_frame = text_frame
-                    self.__face_found = False
-                    self.__detected_face_area = None
+                if self.__detected_object.detected_face.is_face_detected:
+                    self.__detected_object = self.create_undetected_face_object(detected_face)
 
             counter += 1
             if (time.time() - start_time) > x:
@@ -91,16 +80,31 @@ class FaceDetectingGrabber:
                 counter = 0
                 start_time = time.time()
 
-    def __add_face_landmarks(self, frame, landmarks):
+    def create_undetected_face_object(self, detected_face) -> DetectedObject:
+        text_frame = np.zeros((100, 100, 3), np.uint8)
+        # Write some Text
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        bottom_left_corner_of_text = (10, 30)
+        font_scale = 1
+        font_color = (0, 0, 255)
+        line_type = 2
+        cv2.putText(text_frame, 'X',
+                    bottom_left_corner_of_text,
+                    font,
+                    font_scale,
+                    font_color,
+                    line_type)
+        return DetectedObject(text_frame, detected_face)
+
+    def __add_face_landmarks(self, frame, landmarks) -> None:
         for n in range(0, landmarks.num_parts):
             x = landmarks.part(n).x
             y = landmarks.part(n).y
             cv2.circle(frame, (x, y), 2, (255, 0, 0), -1)
 
-    def update_source_frame(self, source_frame):
+    def update_source_frame(self, source_frame) -> None:
         with self.__write_lock:
             self.__source_frame = source_frame
 
-    def read(self):
-        with self.__read_lock:
-            return self.__output_frame, self.__face_found, self.__detected_face_area
+    def read(self) -> DetectedObject:
+        return self.__detected_object

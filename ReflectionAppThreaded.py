@@ -1,56 +1,83 @@
 import cv2
 
-from FaceDetectingGrabber import FaceDetectingGrabber
-from FaceSearchingAreaGrabber import FaceSearchingAreaGrabber
+import RectCoordinates
+from CaptureAreaDrawer import CaptureAreaDrawer
+from FaceDetectingGrabber import FaceDetectingGrabber, DetectedObject
+from SearchingFaceAreaProvider import SearchingFaceAreaProvider
+from ThreadedImageGrabber import ThreadedImageGrabber
 from ThreadedImageShower import ThreadedImageShower
 
-DETECTED_FACE_WINDOW = "Detected face"
-FACE_SEARCHING_AREA_WINDOW = "Face searching area"
+
+class ReflectionAppThreaded:
+    DETECTED_FACE_WINDOW = "Detected face"
+    FACE_SEARCHING_AREA_WINDOW = "Face searching area"
+
+    __stream_width: int
+    __stream_height: int
+    __sfad: SearchingFaceAreaProvider
+    __windows_shower: ThreadedImageShower
+    __capture_area_drawer: CaptureAreaDrawer
+    __image_grabber: ThreadedImageGrabber
+    __face_detecting_grabber: FaceDetectingGrabber
+
+    def __init__(self, source=0):
+        self.__stream_width, self.__stream_height = self.get_video_capturer_dimensions(source)
+        self.__sfad = SearchingFaceAreaProvider(self.__stream_width, self.__stream_height)
+
+        self.__windows_shower = ThreadedImageShower({
+            self.FACE_SEARCHING_AREA_WINDOW: None,
+            self.DETECTED_FACE_WINDOW: None
+        }).start()
+        self.__image_grabber = ThreadedImageGrabber(source).start()
+        self.__capture_area_drawer = CaptureAreaDrawer(
+            self.__image_grabber.read().copy(),
+            self.__sfad.face_searching_area
+        ).start()
+        self.__face_detecting_grabber = FaceDetectingGrabber(
+            self.__image_grabber.read().copy()
+        ).start()
+
+    def loop(self):
+        camera_frame = self.__image_grabber.read()
+
+        self.__capture_area_drawer.update_source_frame(camera_frame.copy())
+        self.__face_detecting_grabber.update_source_frame(camera_frame.copy())
+
+        rectangled_frame: RectCoordinates = self.__capture_area_drawer.read()
+        detected_object: DetectedObject = self.__face_detecting_grabber.read()
+
+        self.__windows_shower.update_window(self.FACE_SEARCHING_AREA_WINDOW, rectangled_frame)
+        self.__windows_shower.update_window(self.DETECTED_FACE_WINDOW, detected_object.output_frame)
+
+    def start(self):
+        while True:
+            if self.is_stopped():
+                self.stop()
+                break
+
+            self.loop()
+
+    def get_video_capturer_dimensions(self, source):
+        # Init input video stuff
+        video_capture = cv2.VideoCapture(source)
+        if not video_capture.isOpened():
+            print("Video not opened. Exiting.")
+            exit()
+        stream_width = video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)
+        stream_height = video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        del video_capture
+
+        return stream_width, stream_height
+
+    def stop(self):
+        self.__image_grabber.stop()
+        self.__capture_area_drawer.stop()
+        self.__windows_shower.stop()
+
+    def is_stopped(self):
+        return self.__image_grabber.stopped \
+               or self.__capture_area_drawer.stopped \
+               or self.__windows_shower.stopped
 
 
-def threadVideoGet(source=0):
-    windows_shower = ThreadedImageShower({FACE_SEARCHING_AREA_WINDOW: None, DETECTED_FACE_WINDOW: None}).start()
-
-    image_grabber = FaceSearchingAreaGrabber(source).start()
-
-    processed_image_grabber = None
-
-    image_processor_enabled = True
-    if image_processor_enabled:
-        processed_image_grabber = FaceDetectingGrabber().start()
-
-    while True:
-        if image_processor_enabled:
-            processed_image_grabber_stopped = processed_image_grabber.stopped
-        else:
-            processed_image_grabber_stopped = False
-
-        if image_grabber.stopped \
-                or windows_shower.stopped \
-                or processed_image_grabber_stopped:
-            image_grabber.stop()
-            windows_shower.stop()
-
-            if image_processor_enabled:
-                processed_image_grabber.stop()
-
-            break
-
-        camera_frame, cropped_camera_frame = image_grabber.read()
-        windows_shower.update_window(FACE_SEARCHING_AREA_WINDOW, camera_frame)
-
-        if image_processor_enabled:
-            processed_face_frame, face_found, detected_face_area = processed_image_grabber.read()
-            windows_shower.update_window(DETECTED_FACE_WINDOW, processed_face_frame)
-
-            if cropped_camera_frame is not None:
-                processed_image_grabber.update_source_frame(cropped_camera_frame.copy())
-
-            if face_found:
-                pass
-                image_grabber.update_next_searching_frame(detected_face_area)
-            else:
-                image_grabber.update_not_found_face()
-
-threadVideoGet(0)
-cv2.destroyAllWindows()
+ReflectionAppThreaded(0).start()

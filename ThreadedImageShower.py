@@ -4,10 +4,11 @@ import cv2
 
 class ThreadedImageShower:
 
+    __thread: threading.Thread
+    stopped: bool = False
+
     def __init__(self, windows):
         self.windows = windows
-        self.stopped = False
-        self.__thread = None
 
     def start(self):
         self.__thread = threading.Thread(target=self.show, args=())
@@ -17,7 +18,8 @@ class ThreadedImageShower:
     def show(self):
         while not self.stopped:
             if cv2.waitKey(1) & 0xFF == ord('q'):
-                self.stop()
+                cv2.destroyAllWindows()
+                self.stopped = True
                 break
 
             for window_name, frame in self.windows.items():
@@ -28,6 +30,7 @@ class ThreadedImageShower:
 
     def stop(self):
         self.stopped = True
+        cv2.destroyAllWindows()
         self.__thread.join()
 
     def update_window(self, window, frame):

@@ -1,3 +1,5 @@
+import copy
+
 from RectCoordinates import RectCoordinates
 
 
@@ -7,7 +9,7 @@ class SearchingFaceAreaProvider:
         self.full_frame_height = full_frame_height
         self.initial_area_scale = 1.5
         self.initial_face_searching_area = self.__initial_face_searching_area()
-        self.face_searching_area = self.initial_face_searching_area
+        self.face_searching_area = copy.copy(self.initial_face_searching_area)
         self.not_found_faces_in_a_row = 0
         self.max_unfound_faces_before_area_reset = 15
 
@@ -28,14 +30,19 @@ class SearchingFaceAreaProvider:
     def update_not_found_face(self):
         self.not_found_faces_in_a_row = self.not_found_faces_in_a_row + 1
         if self.not_found_faces_in_a_row > self.max_unfound_faces_before_area_reset:
-            self.face_searching_area = self.initial_face_searching_area
+            self.face_searching_area = copy.copy(self.initial_face_searching_area)
             self.not_found_faces_in_a_row = 0
 
     def __calc_next_searching_area(self, rect):
-        start_x = self.face_searching_area.startX + rect.startX - rect.w
-        start_y = self.face_searching_area.startY + rect.startY - rect.h / 2
-        end_x = rect.w * 3
-        end_y = rect.h * 2
+        start_origin_x = self.face_searching_area.startX + rect.startX
+        start_origin_y = self.face_searching_area.startY + rect.startY
+
+        start_x = start_origin_x - (rect.w / 2)
+        start_y = start_origin_y - (rect.h / 2)
+
+        end_x = start_origin_x + rect.w + (rect.w / 2)
+        end_y = start_origin_y + rect.h + (rect.h / 2)
+
         if start_y < 0:
             start_y = 0
         if start_x < 0:
@@ -44,4 +51,5 @@ class SearchingFaceAreaProvider:
             end_x = self.full_frame_width
         if end_y > self.full_frame_height:
             end_y = self.full_frame_height
+
         return RectCoordinates(start_x, start_y, end_x, end_y)

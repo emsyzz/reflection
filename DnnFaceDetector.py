@@ -7,12 +7,17 @@ from RectCoordinates import RectCoordinates
 
 
 class DetectedFace:
-    def __init__(self, frame, face_area):
-        self.frame = frame
-        self.face_area = face_area
+    is_face_detected: bool
+    detected_face_area: RectCoordinates
+
+    def __init__(self, is_face_detected: bool, detected_face_area: RectCoordinates):
+        self.is_face_detected = is_face_detected
+        self.detected_face_area = detected_face_area
 
 
 class DnnFaceDetector:
+    detector: cv2.dnn_Net
+
     def __init__(self):
         self.min_face_img_width = 30
         self.min_img_confidence = 0.7
@@ -22,19 +27,14 @@ class DnnFaceDetector:
         modelPath = os.path.sep.join(["face_detection_model", "res10_300x300_ssd_iter_140000.caffemodel"])
         self.detector = cv2.dnn.readNetFromCaffe(protoPath, modelPath)
 
-        self.detected_face_area = None
-        self.is_detected_face = False
-
-    def detect_face(self, face_searching_frame):
+    def detect_face(self, face_searching_frame) -> 'DetectedFace':
         try:
             imageBlob = cv2.dnn.blobFromImage(
                 face_searching_frame, 1.0, (100, 100),
                 (104.0, 177.0, 123.0), swapRB=False, crop=False)
         except Exception as e:
             print(str(e))
-            self.detected_face_area = None
-            self.is_detected_face = False
-            return
+            return DetectedFace(False, None)
         # apply OpenCV's deep learning-based face detector to localize
         # faces in the input image
 
@@ -43,12 +43,11 @@ class DnnFaceDetector:
         (h, w) = face_searching_frame.shape[:2]
         rect = self.__get_biggest_face_coordinates(detections, w, h)
         if rect is not None:
-            self.detected_face_area = rect
-            self.is_detected_face = True
+            return DetectedFace(True, rect)
         else:
-            self.is_detected_face = False
+            return DetectedFace(False, None)
 
-    def __get_biggest_face_coordinates(self, detections, w, h):
+    def __get_biggest_face_coordinates(self, detections, w, h) -> 'RectCoordinates':
         biggest_width = self.min_face_img_width
         biggest_rect = None
         for i in range(0, detections.shape[2]):
