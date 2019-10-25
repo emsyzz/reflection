@@ -26,9 +26,15 @@ class DnnFaceDetector:
         self.is_detected_face = False
 
     def detect_face(self, face_searching_frame):
-        imageBlob = cv2.dnn.blobFromImage(
-            face_searching_frame, 1.0, (100, 100),
-            (104.0, 177.0, 123.0), swapRB=False, crop=False)
+        try:
+            imageBlob = cv2.dnn.blobFromImage(
+                face_searching_frame, 1.0, (100, 100),
+                (104.0, 177.0, 123.0), swapRB=False, crop=False)
+        except Exception as e:
+            print(str(e))
+            self.detected_face_area = None
+            self.is_detected_face = False
+            return
         # apply OpenCV's deep learning-based face detector to localize
         # faces in the input image
 

@@ -1,3 +1,5 @@
+import cv2
+
 from FaceDetectingGrabber import FaceDetectingGrabber
 from FaceSearchingAreaGrabber import FaceSearchingAreaGrabber
 from ThreadedImageShower import ThreadedImageShower
@@ -34,12 +36,21 @@ def threadVideoGet(source=0):
 
             break
 
-        windows_shower.update_window(FACE_SEARCHING_AREA_WINDOW, image_grabber.read_whole_frame())
+        camera_frame, cropped_camera_frame = image_grabber.read()
+        windows_shower.update_window(FACE_SEARCHING_AREA_WINDOW, camera_frame)
 
         if image_processor_enabled:
-            windows_shower.update_window(DETECTED_FACE_WINDOW, processed_image_grabber.read_frame())
-            if image_grabber.read_extracted_frame() is not None:
-                processed_image_grabber.update_source_frame(image_grabber.read_extracted_frame().copy())
+            processed_face_frame, face_found, detected_face_area = processed_image_grabber.read()
+            windows_shower.update_window(DETECTED_FACE_WINDOW, processed_face_frame)
 
+            if cropped_camera_frame is not None:
+                processed_image_grabber.update_source_frame(cropped_camera_frame.copy())
+
+            if face_found:
+                pass
+                image_grabber.update_next_searching_frame(detected_face_area)
+            else:
+                image_grabber.update_not_found_face()
 
 threadVideoGet(0)
+cv2.destroyAllWindows()
