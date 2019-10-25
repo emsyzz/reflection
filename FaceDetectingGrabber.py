@@ -54,6 +54,7 @@ class FaceDetectingGrabber:
 
                 self.frame = face_frame
             else:
+                self.detected_face_area = None
                 self.face_found = False
                 frame = np.zeros((100, 100, 3), np.uint8)
 
