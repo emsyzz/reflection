@@ -55,13 +55,12 @@ class ReflectionAppThreaded:
         self.__capture_area_drawer.update_rectangle(self.__sfad.face_searching_area)
 
         self.__windows_shower.update_window(self.FACE_SEARCHING_AREA_WINDOW, rectangled_frame)
-        self.__windows_shower.update_window(self.DETECTED_FACE_WINDOW, self.scale_cropped_face_image(detected_object))
+        self.__windows_shower.update_window(self.DETECTED_FACE_WINDOW, self.__scale_cropped_face_image(detected_object))
 
     CROPPED_FACE_BASE_HEIGHT = 480
     CROPPED_FACE_BASE_WIDTH = 480
-    CROPPED_FACE_BASE_IMAGE = np.zeros((CROPPED_FACE_BASE_WIDTH, CROPPED_FACE_BASE_HEIGHT, 3), np.uint8)
 
-    def scale_cropped_face_image(self, detected_object: DetectedObject):
+    def __scale_cropped_face_image(self, detected_object: DetectedObject):
         original_height, original_width = detected_object.output_frame.shape[:2]
         if original_height > original_width:
             height_percent = (self.CROPPED_FACE_BASE_HEIGHT / float(original_height))

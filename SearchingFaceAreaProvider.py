@@ -33,14 +33,17 @@ class SearchingFaceAreaProvider:
             self.face_searching_area = copy.copy(self.initial_face_searching_area)
             self.not_found_faces_in_a_row = 0
 
+    PADDING_PERCENTAGE_X = .3
+    PADDING_PERCENTAGE_Y = .3
+
     def __calc_next_searching_area(self, rect: RectCoordinates):
         start_origin_x = rect.startX
         start_origin_y = rect.startY
         end_origin_x = rect.endX
         end_origin_y = rect.endY
 
-        padding_x = (rect.w / 2)
-        padding_y = (rect.h / 2)
+        padding_x = (rect.w * self.PADDING_PERCENTAGE_X)
+        padding_y = (rect.h * self.PADDING_PERCENTAGE_Y)
 
         start_x = start_origin_x - padding_x
         start_y = start_origin_y - padding_y
