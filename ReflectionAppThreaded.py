@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 
 import RectCoordinates
 from CaptureAreaDrawer import CaptureAreaDrawer
@@ -46,8 +47,50 @@ class ReflectionAppThreaded:
         rectangled_frame: RectCoordinates = self.__capture_area_drawer.read()
         detected_object: DetectedObject = self.__face_detecting_grabber.read()
 
+        if detected_object.detected_face.is_face_detected:
+            self.__sfad.update_next_searching_frame(detected_object.detected_face.detected_face_area)
+        else:
+            self.__sfad.update_not_found_face()
+
+        self.__capture_area_drawer.update_rectangle(self.__sfad.face_searching_area)
+
         self.__windows_shower.update_window(self.FACE_SEARCHING_AREA_WINDOW, rectangled_frame)
-        self.__windows_shower.update_window(self.DETECTED_FACE_WINDOW, detected_object.output_frame)
+        self.__windows_shower.update_window(self.DETECTED_FACE_WINDOW, self.scale_cropped_face_image(detected_object))
+
+    CROPPED_FACE_BASE_HEIGHT = 480
+    CROPPED_FACE_BASE_WIDTH = 480
+    CROPPED_FACE_BASE_IMAGE = np.zeros((CROPPED_FACE_BASE_WIDTH, CROPPED_FACE_BASE_HEIGHT, 3), np.uint8)
+
+    def scale_cropped_face_image(self, detected_object: DetectedObject):
+        original_height, original_width = detected_object.output_frame.shape[:2]
+        if original_height > original_width:
+            height_percent = (self.CROPPED_FACE_BASE_HEIGHT / float(original_height))
+            new_width_size = int((float(original_width) * float(height_percent)))
+
+            width_diff = int((self.CROPPED_FACE_BASE_WIDTH - new_width_size) / 2)
+            width_fill = np.zeros((self.CROPPED_FACE_BASE_WIDTH, width_diff, 3), np.uint8)
+
+            new_image = cv2.resize(
+                detected_object.output_frame,
+                (new_width_size, self.CROPPED_FACE_BASE_HEIGHT),
+                interpolation=cv2.INTER_AREA
+            )
+            new_image = np.concatenate((width_fill, new_image, width_fill), axis=1)
+        else:
+            width_percent = (self.CROPPED_FACE_BASE_WIDTH / float(original_width))
+            new_height_size = int((float(original_height) * float(width_percent)))
+
+            height_diff = int((self.CROPPED_FACE_BASE_HEIGHT - new_height_size) / 2)
+            height_fill = np.zeros((height_diff, self.CROPPED_FACE_BASE_HEIGHT, 3), np.uint8)
+
+            new_image = cv2.resize(
+                detected_object.output_frame,
+                (self.CROPPED_FACE_BASE_WIDTH, new_height_size),
+                interpolation=cv2.INTER_AREA
+            )
+            new_image = np.concatenate((height_fill, new_image, height_fill), axis=0)
+
+        return new_image
 
     def start(self):
         while True:
