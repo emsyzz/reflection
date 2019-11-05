@@ -66,7 +66,7 @@ class GCodeSender:
                 retries = 15
                 while not self.__current_command.finished:
                     try:
-                        self.__send(self.__current_command.command)
+                        self.send_immediate(self.__current_command.command)
                         self.__current_command.finished = True
                     except Exception as e:
                         retries -= 1
@@ -78,12 +78,11 @@ class GCodeSender:
 
             self.__command_received.wait(1)
 
-    def __send(self, code) -> None:
+    def send_immediate(self, code) -> None:
         print("Send: %s" % code)
         self.__serial_device.write(bytes('%s\n' % code, 'ascii'))
         inp = self.__serial_device.readline()
         print("Receive: %s" % inp)
-        time.sleep(1)
 
     def send(self, command):
         self.__command = GCodeCommand(command, False)
@@ -96,19 +95,19 @@ with serial.Serial(sys.argv[1], 115200) as s:
 
     # Wake up grbl
     s.write(bytes("\r\n\r\n", 'ascii'))
-    time.sleep(2)   # Wait for grbl to initialize
+    time.sleep(2)  # Wait for grbl to initialize
     s.flushInput()  # Flush startup text in serial input
 
-    gcode_sender.send('$X')
+    gcode_sender.send_immediate('$X')
 
     # Stream g-code to grbl
     while True:
         line = sys.stdin.readline()
         if not line:
             continue
-        l = float(line.strip()) # Strip all EOL characters for consistency
-        print('Input: %s' % l)
-        g = convert(l, (-angle_limit, angle_limit), (0, 60), offset=-30)
+        line = float(line.strip())  # Strip all EOL characters for consistency
+        print('Input: %s' % line)
+        g = convert(line, (-angle_limit, angle_limit), (0, 60), offset=-30)
         print('Gcode: %s' % g)
         gcode_sender.send('$X')
 
