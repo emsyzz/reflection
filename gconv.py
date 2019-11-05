@@ -61,7 +61,7 @@ class GCodeSender:
     def __send_commands(self) -> None:
         while not self.stopped:
             self.__command_received.clear()
-            if self.__command:
+            if self.__command and not self.__command.finished:
                 self.__current_command = self.__command
                 retries = 15
                 while not self.__current_command.finished:
@@ -76,7 +76,7 @@ class GCodeSender:
                         else:
                             print("exception caught while sending. " + str(e) + ". Retrying")
 
-            self.__command_received.wait()
+            self.__command_received.wait(1)
 
     def __send(self, code) -> None:
         print("Send: %s" % code)
