@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import copy
 import sys
 import threading
 import time
@@ -63,7 +62,7 @@ class GCodeSender:
         while not self.stopped:
             self.__command_received.clear()
             if self.__command:
-                self.__current_command = copy.copy(self.__command)
+                self.__current_command = self.__command
                 retries = 15
                 while not self.__current_command.finished:
                     try:
