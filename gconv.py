@@ -42,6 +42,8 @@ class GCodeSender:
     __command: GCodeCommand = None
     __current_command: GCodeCommand = None
 
+    __write_lock: threading.Lock
+
     stopped: bool = False
 
     def __init__(self, serial_output: serial.Serial) -> None:
@@ -50,6 +52,7 @@ class GCodeSender:
     def start(self) -> 'GCodeSender':
         self.__thread = threading.Thread(target=self.__send_commands, args=())
         self.__command_received = threading.Event()
+        self.__write_lock = threading.Lock()
         self.__thread.start()
         self.stopped = False
         return self
@@ -78,11 +81,12 @@ class GCodeSender:
 
             self.__command_received.wait(1)
 
-    def send_immediate(self, code) -> None:
-        print("Send: %s" % code)
-        self.__serial_device.write(bytes('%s\n' % code, 'ascii'))
-        inp = self.__serial_device.readline()
-        print("Receive: %s" % inp)
+    def send_immediate(self, command) -> None:
+        with self.__write_lock:
+            print("Send: %s" % command)
+            self.__serial_device.write(bytes('%s\n' % command, 'ascii'))
+            inp = self.__serial_device.readline()
+            print("Receive: %s" % inp)
 
     def send(self, command):
         self.__command = GCodeCommand(command, False)
@@ -90,7 +94,7 @@ class GCodeSender:
 
 
 # Open grbl serial port
-with serial.Serial(sys.argv[1], 115200) as s:
+with serial.Serial('/dev/pts/9', 115200) as s:
     gcode_sender = GCodeSender(s).start()
 
     # Wake up grbl
@@ -109,6 +113,6 @@ with serial.Serial(sys.argv[1], 115200) as s:
         print('Input: %s' % line)
         g = convert(line, (-angle_limit, angle_limit), (0, 60), offset=-30)
         print('Gcode: %s' % g)
-        gcode_sender.send('$X')
+        gcode_sender.send(g)
 
 gcode_sender.stop()
