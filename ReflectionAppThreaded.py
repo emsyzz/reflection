@@ -52,13 +52,13 @@ class ReflectionAppThreaded:
 
         self.__capture_area_drawer.update_source_frame(camera_frame.copy())
         self.__face_detecting_grabber.update_source_frame(camera_frame.copy())
-        self.__prnet.update_source_frame(self.__face_detecting_grabber.read().output_frame.copy())
 
         rectangled_frame: RectCoordinates = self.__capture_area_drawer.read()
         detected_object: DetectedObject = self.__face_detecting_grabber.read()
         prn_result: PRNResult = self.__prnet.read()
 
         if detected_object.detected_face.is_face_detected:
+            self.__prnet.update_source_frame(self.__face_detecting_grabber.read().output_frame.copy())
             self.__sfad.update_next_searching_frame(detected_object.detected_face.detected_face_area)
         else:
             self.__sfad.update_not_found_face()

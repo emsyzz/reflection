@@ -26,7 +26,6 @@ class FaceDetectingGrabber:
 
     __thread: threading.Thread
     __write_lock: threading.Lock = threading.Lock()
-    __predictor: shape_predictor = dlib.shape_predictor('face_detection_model/shape_predictor_68_face_landmarks.dat')
     __fd: DnnFaceDetector = DnnFaceDetector()
 
     def __init__(self, source_frame: np.ndarray):
@@ -57,18 +56,7 @@ class FaceDetectingGrabber:
 
             if detected_face.is_face_detected:
                 detected_face_area = detected_face.detected_face_area
-
                 face_frame = detected_face_area.get_frame(source_frame)
-
-                face = dlib.rectangle(
-                    0,
-                    0,
-                    face_frame.shape[1],
-                    face_frame.shape[0]
-                )
-                landmarks = self.__predictor(face_frame, face)
-                self.__add_face_landmarks(face_frame, landmarks)
-
                 self.__detected_object = DetectedObject(face_frame, detected_face)
             else:
                 if self.__detected_object.detected_face.is_face_detected:
