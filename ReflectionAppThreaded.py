@@ -141,5 +141,5 @@ class ReflectionAppThreaded:
                or self.__windows_shower.stopped
 
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1,0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 ReflectionAppThreaded(0).start()
