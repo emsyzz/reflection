@@ -4,9 +4,9 @@ import time
 
 import numpy as np
 
-from library.PRNet.api import PRN
-from library.PRNet.utils.cv_plot import plot_pose_box
-from library.PRNet.utils.estimate_pose import estimate_pose
+from prnet.api import PRN
+from prnet.utils.cv_plot import plot_pose_box
+from prnet.utils.estimate_pose import estimate_pose
 
 
 class PRNResult:
@@ -32,7 +32,7 @@ class ThreadedPRNet:
         self.__source_frame = source_frame
 
     def start(self) -> 'ThreadedPRNet':
-        self.__prn = PRN(is_dlib=True, prefix=os.path.join(os.getcwd(), 'library/PRNet'))
+        self.__prn = PRN(is_dlib=True)
         box = np.array(
             [0, self.__source_frame.shape[1] - 1, 0, self.__source_frame.shape[0] - 1])  # cropped with bounding box
         self.__prn_pos = self.__prn.process(self.__source_frame, box)
@@ -72,7 +72,7 @@ class ThreadedPRNet:
             kpt = self.__prn.get_landmarks(prn_pos)
 
             # estimate pose
-            camera_matrix, pose = estimate_pose(vertices, prefix=os.path.join(os.getcwd(), 'library/PRNet'))
+            camera_matrix, pose = estimate_pose(vertices)
 
             self.__prn_result = PRNResult(plot_pose_box(source_frame, camera_matrix, kpt))
 

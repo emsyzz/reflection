@@ -3,3 +3,4 @@ imutils
 dlib
 numpy
 pyserial
+git+https://github.com/RonnyLV/PRNet
