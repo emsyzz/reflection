@@ -1,6 +1,6 @@
 import copy
 
-from RectCoordinates import RectCoordinates
+from src.RectCoordinates import RectCoordinates
 
 
 class SearchingFaceAreaProvider:

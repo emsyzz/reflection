@@ -3,7 +3,7 @@ import os
 import cv2
 import numpy as np
 
-from RectCoordinates import RectCoordinates
+from src.RectCoordinates import RectCoordinates
 
 
 class DetectedFace:

@@ -2,9 +2,9 @@ import cv2
 from imutils.video import FPS
 import dlib
 
-from DnnFaceDetector import DnnFaceDetector
-from SearchingFaceAreaProvider import SearchingFaceAreaProvider
-from VideoFrameProcessor import VideoFrameProcessor
+from src.DnnFaceDetector import DnnFaceDetector
+from src.SearchingFaceAreaProvider import SearchingFaceAreaProvider
+from src.VideoFrameProcessor import VideoFrameProcessor
 
 
 class ReflectionApp:

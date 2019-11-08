@@ -6,7 +6,7 @@ import dlib
 import numpy as np
 from dlib import shape_predictor
 
-from DnnFaceDetector import DnnFaceDetector, DetectedFace
+from src.DnnFaceDetector import DnnFaceDetector, DetectedFace
 
 
 class DetectedObject:

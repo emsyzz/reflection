@@ -1,12 +1,12 @@
 import cv2
 import numpy as np
 
-import RectCoordinates
-from CaptureAreaDrawer import CaptureAreaDrawer
-from FaceDetectingGrabber import FaceDetectingGrabber, DetectedObject
-from SearchingFaceAreaProvider import SearchingFaceAreaProvider
-from ThreadedImageGrabber import ThreadedImageGrabber
-from ThreadedImageShower import ThreadedImageShower
+from src import RectCoordinates
+from src.CaptureAreaDrawer import CaptureAreaDrawer
+from src.FaceDetectingGrabber import FaceDetectingGrabber, DetectedObject
+from src.SearchingFaceAreaProvider import SearchingFaceAreaProvider
+from src.ThreadedImageGrabber import ThreadedImageGrabber
+from src.ThreadedImageShower import ThreadedImageShower
 
 
 class ReflectionAppThreaded:

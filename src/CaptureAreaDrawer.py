@@ -5,7 +5,7 @@ import cv2
 import numpy
 import numpy as np
 
-import RectCoordinates
+from src import RectCoordinates
 
 
 class CaptureAreaDrawer:
