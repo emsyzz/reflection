@@ -1,3 +1,5 @@
+import os
+
 import cv2
 import numpy as np
 
@@ -7,11 +9,13 @@ from src.FaceDetectingGrabber import FaceDetectingGrabber, DetectedObject
 from src.SearchingFaceAreaProvider import SearchingFaceAreaProvider
 from src.ThreadedImageGrabber import ThreadedImageGrabber
 from src.ThreadedImageShower import ThreadedImageShower
+from src.ThreadedPRNet import ThreadedPRNet, PRNResult
 
 
 class ReflectionAppThreaded:
     DETECTED_FACE_WINDOW = "Detected face"
     FACE_SEARCHING_AREA_WINDOW = "Face searching area"
+    PRNET_WINDOW = "PRNET_WINDOW"
 
     __stream_width: int
     __stream_height: int
@@ -20,6 +24,7 @@ class ReflectionAppThreaded:
     __capture_area_drawer: CaptureAreaDrawer
     __image_grabber: ThreadedImageGrabber
     __face_detecting_grabber: FaceDetectingGrabber
+    __prnet: ThreadedPRNet
 
     def __init__(self, source=0):
         self.__stream_width, self.__stream_height = self.get_video_capturer_dimensions(source)
@@ -27,7 +32,8 @@ class ReflectionAppThreaded:
 
         self.__windows_shower = ThreadedImageShower({
             self.FACE_SEARCHING_AREA_WINDOW: None,
-            self.DETECTED_FACE_WINDOW: None
+            self.DETECTED_FACE_WINDOW: None,
+            self.PRNET_WINDOW: None
         }).start()
         self.__image_grabber = ThreadedImageGrabber(source).start()
         self.__capture_area_drawer = CaptureAreaDrawer(
@@ -37,15 +43,20 @@ class ReflectionAppThreaded:
         self.__face_detecting_grabber = FaceDetectingGrabber(
             self.__image_grabber.read().copy()
         ).start()
+        self.__prnet = ThreadedPRNet(
+            self.__face_detecting_grabber.read().output_frame.copy()
+        ).start()
 
     def loop(self):
         camera_frame = self.__image_grabber.read()
 
         self.__capture_area_drawer.update_source_frame(camera_frame.copy())
         self.__face_detecting_grabber.update_source_frame(camera_frame.copy())
+        self.__prnet.update_source_frame(self.__face_detecting_grabber.read().output_frame.copy())
 
         rectangled_frame: RectCoordinates = self.__capture_area_drawer.read()
         detected_object: DetectedObject = self.__face_detecting_grabber.read()
+        prn_result: PRNResult = self.__prnet.read()
 
         if detected_object.detected_face.is_face_detected:
             self.__sfad.update_next_searching_frame(detected_object.detected_face.detected_face_area)
@@ -55,6 +66,8 @@ class ReflectionAppThreaded:
         self.__capture_area_drawer.update_rectangle(self.__sfad.face_searching_area)
 
         self.__windows_shower.update_window(self.FACE_SEARCHING_AREA_WINDOW, rectangled_frame)
+        if prn_result is not None:
+            self.__windows_shower.update_window(self.PRNET_WINDOW, prn_result.pose)
         self.__windows_shower.update_window(self.DETECTED_FACE_WINDOW, self.__scale_cropped_face_image(detected_object))
 
     CROPPED_FACE_BASE_HEIGHT = 480
@@ -128,4 +141,5 @@ class ReflectionAppThreaded:
                or self.__windows_shower.stopped
 
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '1,0'
 ReflectionAppThreaded(0).start()
