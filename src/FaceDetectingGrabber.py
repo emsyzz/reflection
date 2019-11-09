@@ -2,11 +2,10 @@ import threading
 import time
 
 import cv2
-import dlib
 import numpy as np
-from dlib import shape_predictor
 
-from src.DnnFaceDetector import DnnFaceDetector, DetectedFace
+from src.detectors import FaceDetector
+from src.detectors.DnnFaceDetector import DetectedFace
 
 
 class DetectedObject:
@@ -26,13 +25,14 @@ class FaceDetectingGrabber:
 
     __thread: threading.Thread
     __write_lock: threading.Lock = threading.Lock()
-    __fd: DnnFaceDetector = DnnFaceDetector()
+    __fd: FaceDetector
 
-    def __init__(self, source_frame: np.ndarray):
+    def __init__(self, fd: FaceDetector):
+        self.__fd = fd
+
+    def start(self, source_frame: np.ndarray) -> 'FaceDetectingGrabber':
         self.__source_frame = source_frame
-
-    def start(self) -> 'FaceDetectingGrabber':
-        detected_face = self.__fd.detect_face(self.__source_frame)
+        detected_face = DetectedFace(False, None)
         self.__detected_object = self.create_undetected_face_object(detected_face)
         self.__thread = threading.Thread(target=self.grab, args=())
         self.__thread.start()

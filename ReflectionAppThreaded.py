@@ -2,6 +2,7 @@ import os
 
 import cv2
 import numpy as np
+import prnet
 
 from src import RectCoordinates
 from src.CaptureAreaDrawer import CaptureAreaDrawer
@@ -10,7 +11,11 @@ from src.SearchingFaceAreaProvider import SearchingFaceAreaProvider
 from src.ThreadedImageGrabber import ThreadedImageGrabber
 from src.ThreadedImageShower import ThreadedImageShower
 from src.ThreadedPRNet import ThreadedPRNet, PRNResult
+from src.detectors import FaceDetector
+from src.detectors.DnnFaceDetector import DnnFaceDetector
+from src.detectors.PrnFaceDetector import PrnFaceDetector
 
+face_detection_mode = 'dnn'  # or 'prnet'
 
 class ReflectionAppThreaded:
     DETECTED_FACE_WINDOW = "Detected face"
@@ -24,9 +29,11 @@ class ReflectionAppThreaded:
     __capture_area_drawer: CaptureAreaDrawer
     __image_grabber: ThreadedImageGrabber
     __face_detecting_grabber: FaceDetectingGrabber
-    __prnet: ThreadedPRNet
+    __threaded_prnet: ThreadedPRNet
+    __prn: prnet.PRN
 
     def __init__(self, source=0):
+        self.__prn = prnet.PRN(is_dlib=True)
         self.__stream_width, self.__stream_height = self.get_video_capturer_dimensions(source)
         self.__sfad = SearchingFaceAreaProvider(self.__stream_width, self.__stream_height)
 
@@ -40,12 +47,21 @@ class ReflectionAppThreaded:
             self.__image_grabber.read().copy(),
             self.__sfad.face_searching_area
         ).start()
+
+        if face_detection_mode == 'prnet':
+            face_detector: FaceDetector = PrnFaceDetector(self.__prn)
+        elif face_detection_mode == 'dnn':
+            face_detector: FaceDetector = DnnFaceDetector()
+        else:
+            raise Exception('no face detector created')
+
         self.__face_detecting_grabber = FaceDetectingGrabber(
-            self.__image_grabber.read().copy()
-        ).start()
-        self.__prnet = ThreadedPRNet(
-            self.__face_detecting_grabber.read().output_frame.copy()
-        ).start()
+            face_detector
+        ).start(self.__image_grabber.read().copy())
+
+        self.__threaded_prnet = ThreadedPRNet(
+            self.__prn
+        ).start(self.__face_detecting_grabber.read().output_frame.copy())
 
     def loop(self):
         camera_frame = self.__image_grabber.read()
@@ -55,11 +71,12 @@ class ReflectionAppThreaded:
 
         rectangled_frame: RectCoordinates = self.__capture_area_drawer.read()
         detected_object: DetectedObject = self.__face_detecting_grabber.read()
-        prn_result: PRNResult = self.__prnet.read()
+        prn_result: PRNResult = self.__threaded_prnet.read()
 
         if detected_object.detected_face.is_face_detected:
-            self.__prnet.update_source_frame(self.__face_detecting_grabber.read().output_frame.copy())
             self.__sfad.update_next_searching_frame(detected_object.detected_face.detected_face_area)
+            self.__threaded_prnet.update_source_frame(
+                self.__sfad.face_searching_area.get_frame(self.__image_grabber.read().copy()))
         else:
             self.__sfad.update_not_found_face()
 

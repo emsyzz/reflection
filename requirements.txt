@@ -1,6 +1,8 @@
 opencv-contrib-python
 imutils
 dlib
-numpy
+numpy<1.17
+gast==0.2.2
 pyserial
 git+https://github.com/RonnyLV/PRNet
+scikit-image

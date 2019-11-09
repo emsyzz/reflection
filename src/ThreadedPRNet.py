@@ -1,12 +1,11 @@
-import os
 import threading
 import time
 
+import cv2
 import numpy as np
+import prnet
 
-from prnet.api import PRN
-from prnet.utils.cv_plot import plot_pose_box
-from prnet.utils.estimate_pose import estimate_pose
+TEXTURE_SIZE = 256
 
 
 class PRNResult:
@@ -24,15 +23,15 @@ class ThreadedPRNet:
 
     __thread: threading.Thread
     __write_lock: threading.Lock = threading.Lock()
-    __prn: PRN
+    __prn: prnet.PRN
 
     __prn_pos: any
 
-    def __init__(self, source_frame: np.ndarray):
-        self.__source_frame = source_frame
+    def __init__(self, prn: prnet.PRN):
+        self.__prn = prn
 
-    def start(self) -> 'ThreadedPRNet':
-        self.__prn = PRN(is_dlib=True)
+    def start(self, source_frame: np.ndarray) -> 'ThreadedPRNet':
+        self.__source_frame = source_frame
         box = np.array(
             [0, self.__source_frame.shape[1] - 1, 0, self.__source_frame.shape[0] - 1])  # cropped with bounding box
         self.__prn_pos = self.__prn.process(self.__source_frame, box)

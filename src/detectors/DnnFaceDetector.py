@@ -3,19 +3,12 @@ import os
 import cv2
 import numpy as np
 
+from src.DetectedFace import DetectedFace
 from src.RectCoordinates import RectCoordinates
+from src.detectors.FaceDetector import AbstractFaceDetector
 
 
-class DetectedFace:
-    is_face_detected: bool
-    detected_face_area: RectCoordinates
-
-    def __init__(self, is_face_detected: bool, detected_face_area: RectCoordinates):
-        self.is_face_detected = is_face_detected
-        self.detected_face_area = detected_face_area
-
-
-class DnnFaceDetector:
+class DnnFaceDetector(AbstractFaceDetector):
     detector: cv2.dnn_Net
 
     def __init__(self):
