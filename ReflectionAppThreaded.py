@@ -1,8 +1,13 @@
 import os
+import subprocess
+from multiprocessing import Queue
+from queue import Empty
+from threading import Thread
 
 import cv2
 import numpy as np
 import prnet
+from skimage.io import imread
 
 from src import RectCoordinates
 from src.CaptureAreaDrawer import CaptureAreaDrawer
@@ -60,8 +65,24 @@ class ReflectionAppThreaded:
         ).start(self.__image_grabber.read().copy())
 
         self.__threaded_prnet = ThreadedPRNet(
-            self.__prn
+            self.__prn,
+            imread(os.path.dirname(__file__) + "/assets/3dface.png")
         ).start(self.__face_detecting_grabber.read().output_frame.copy())
+
+        self.__stream_output = subprocess.Popen(
+            ['ffmpeg -i - -vcodec rawvideo -pix_fmt bgr24 -threads 0 -f v4l2 /dev/video1'],
+            stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True,
+            stderr=subprocess.STDOUT, bufsize=1)
+
+        self.q = Queue()
+        t = Thread(target=self.enqueue_output, args=(self.__stream_output.stdout, self.q))
+        t.daemon = True  # thread dies with the program
+        t.start()
+
+    def enqueue_output(self, out, queue):
+        for line in iter(out.readline, b''):
+            queue.put(line)
+        out.close()
 
     def loop(self):
         camera_frame = self.__image_grabber.read()
@@ -75,8 +96,11 @@ class ReflectionAppThreaded:
 
         if detected_object.detected_face.is_face_detected:
             self.__sfad.update_next_searching_frame(detected_object.detected_face.detected_face_area)
-            self.__threaded_prnet.update_source_frame(
-                self.__sfad.face_searching_area.get_frame(self.__image_grabber.read().copy()))
+            self.__threaded_prnet.update_source_frame(self.__face_detecting_grabber.read().output_frame.copy())
+
+            # frame = self.__face_detecting_grabber.read().output_frame.copy()
+            # frame = self.__scale_cropped_face_image(frame)
+            # self.__write_to_v4l2_loopback(frame)
         else:
             self.__sfad.update_not_found_face()
 
@@ -84,14 +108,29 @@ class ReflectionAppThreaded:
 
         self.__windows_shower.update_window(self.FACE_SEARCHING_AREA_WINDOW, rectangled_frame)
         if prn_result is not None:
-            self.__windows_shower.update_window(self.PRNET_WINDOW, prn_result.pose)
-        self.__windows_shower.update_window(self.DETECTED_FACE_WINDOW, self.__scale_cropped_face_image(detected_object))
+            self.__write_to_v4l2_loopback(self.__scale_cropped_face_image(prn_result.pose))
+
+
+
+        self.__windows_shower.update_window(self.DETECTED_FACE_WINDOW,
+                                            self.__scale_cropped_face_image(detected_object.output_frame))
+
+    def __write_to_v4l2_loopback(self, source_frame: np.ndarray):
+        try:
+            line = self.q.get_nowait()  # or q.get(timeout=.1)
+            print(line)
+        except Empty:
+            pass
+
+        encoded_image = cv2.imencode('.jpg', source_frame)[1].tobytes()
+        self.__stream_output.stdin.write(encoded_image)
+        self.__stream_output.stdin.flush()
 
     CROPPED_FACE_BASE_HEIGHT = 480
     CROPPED_FACE_BASE_WIDTH = 480
 
-    def __scale_cropped_face_image(self, detected_object: DetectedObject):
-        original_height, original_width = detected_object.output_frame.shape[:2]
+    def __scale_cropped_face_image(self, source_frame: np.ndarray):
+        original_height, original_width = source_frame.shape[:2]
         if original_height > original_width:
             height_percent = (self.CROPPED_FACE_BASE_HEIGHT / float(original_height))
             new_width_size = int(float(original_width) * float(height_percent))
@@ -103,7 +142,7 @@ class ReflectionAppThreaded:
             width_fill = np.zeros((self.CROPPED_FACE_BASE_WIDTH, width_diff, 3), np.uint8)
 
             new_image = cv2.resize(
-                detected_object.output_frame,
+                source_frame,
                 (new_width_size, self.CROPPED_FACE_BASE_HEIGHT),
                 interpolation=cv2.INTER_AREA
             )
@@ -119,7 +158,7 @@ class ReflectionAppThreaded:
             height_fill = np.zeros((height_diff, self.CROPPED_FACE_BASE_HEIGHT, 3), np.uint8)
 
             new_image = cv2.resize(
-                detected_object.output_frame,
+                source_frame,
                 (self.CROPPED_FACE_BASE_WIDTH, new_height_size),
                 interpolation=cv2.INTER_AREA
             )

@@ -27,7 +27,7 @@ class CaptureAreaDrawer:
 
     def start(self) -> 'CaptureAreaDrawer':
         self.__frame = self.create_retangled_frame(self.OUTLINE_COLOR, self.__rect, self.__source_frame.copy())
-        self.__thread = threading.Thread(target=self.draw, args=())
+        self.__thread = threading.Thread(target=self.draw, args=(), daemon=True)
         self.__thread.start()
         return self
 

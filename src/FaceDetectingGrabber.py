@@ -34,7 +34,7 @@ class FaceDetectingGrabber:
         self.__source_frame = source_frame
         detected_face = DetectedFace(False, None)
         self.__detected_object = self.create_undetected_face_object(detected_face)
-        self.__thread = threading.Thread(target=self.grab, args=())
+        self.__thread = threading.Thread(target=self.grab, args=(), daemon=True)
         self.__thread.start()
         return self
 
