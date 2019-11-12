@@ -11,20 +11,29 @@ from src.detectors.FaceDetector import AbstractFaceDetector
 class DnnFaceDetector(AbstractFaceDetector):
     detector: cv2.dnn_Net
 
-    def __init__(self):
+    def __init__(self, is_floating_point=False):
         self.min_face_img_width = 30
         self.min_img_confidence = 0.7
         # load our serialized face detector from disk
         print("[INFO] loading face detector...")
-        protoPath = os.path.sep.join(["face_detection_model", "deploy.prototxt"])
-        modelPath = os.path.sep.join(["face_detection_model", "res10_300x300_ssd_iter_140000.caffemodel"])
-        self.detector = cv2.dnn.readNetFromCaffe(protoPath, modelPath)
+        self.__load_models(is_floating_point)
+
+    def __load_models(self, is_floating_point):
+        if is_floating_point:
+            modelFile = os.path.sep.join(["face_detection_model", "res10_300x300_ssd_iter_140000.caffemodel"])
+            configFile = os.path.sep.join(["face_detection_model", "deploy.prototxt"])
+            self.detector = cv2.dnn.readNetFromCaffe(configFile, modelFile)
+        else:
+            modelFile = os.path.sep.join(["face_detection_model", "opencv_face_detector_uint8.pb"])
+            configFile = os.path.sep.join(["face_detection_model", "opencv_face_detector.pbtxt"])
+            self.detector = cv2.dnn.readNetFromTensorflow(modelFile, configFile)
+
 
     def detect_face(self, face_searching_frame) -> 'DetectedFace':
         try:
             imageBlob = cv2.dnn.blobFromImage(
                 face_searching_frame, 1.0, (100, 100),
-                (104.0, 177.0, 123.0), swapRB=False, crop=False)
+                None, swapRB=False, crop=False, ddepth=cv2.CV_8U)
         except Exception as e:
             print(str(e))
             return DetectedFace(False, None)

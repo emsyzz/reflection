@@ -1,4 +1,6 @@
 import threading
+import time
+
 import cv2
 
 
@@ -11,13 +13,13 @@ class ThreadedImageShower:
         self.windows = windows
 
     def start(self):
-        self.__thread = threading.Thread(target=self.show, args=())
+        self.__thread = threading.Thread(target=self.show, args=(), daemon=True)
         self.__thread.start()
         return self
 
     def show(self):
         while not self.stopped:
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            if cv2.waitKey(25) & 0xFF == ord('q'):
                 cv2.destroyAllWindows()
                 self.stopped = True
                 break

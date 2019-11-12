@@ -84,12 +84,6 @@ class FaceDetectingGrabber:
                     line_type)
         return DetectedObject(text_frame, detected_face)
 
-    def __add_face_landmarks(self, frame, landmarks) -> None:
-        for n in range(0, landmarks.num_parts):
-            x = landmarks.part(n).x
-            y = landmarks.part(n).y
-            cv2.circle(frame, (x, y), 2, (255, 0, 0), -1)
-
     def update_source_frame(self, source_frame) -> None:
         with self.__write_lock:
             self.__source_frame = source_frame
