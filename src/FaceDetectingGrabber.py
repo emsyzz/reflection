@@ -27,16 +27,21 @@ class FaceDetectingGrabber:
     __write_lock: threading.Lock = threading.Lock()
     __fd: FaceDetector
 
-    def __init__(self, fd: FaceDetector):
+    def __init__(self, fd: FaceDetector, source_frame: np.ndarray):
+        self.__source_frame = source_frame
         self.__fd = fd
+        self.__init()
 
     def start(self, source_frame: np.ndarray) -> 'FaceDetectingGrabber':
         self.__source_frame = source_frame
-        detected_face = DetectedFace(False, None)
-        self.__detected_object = self.create_undetected_face_object(detected_face)
+        self.__init()
         self.__thread = threading.Thread(target=self.grab, args=(), daemon=True)
         self.__thread.start()
         return self
+
+    def __init(self):
+        detected_face = DetectedFace(False, None)
+        self.__detected_object = self.create_undetected_face_object(detected_face)
 
     def stop(self) -> None:
         self.stopped = True

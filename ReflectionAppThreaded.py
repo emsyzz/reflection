@@ -54,15 +54,17 @@ class ReflectionAppThreaded:
         face_detector: FaceDetector = DnnFaceDetector(True)
 
         self.__face_detecting_grabber = FaceDetectingGrabber(
-            face_detector
-        ).start(self.__image_grabber.read())
-
-        self.__reference_original_face = cv2.imread(os.path.dirname(__file__) + "/assets/3dface_resized.png")
+            face_detector,
+            self.__image_grabber.read()
+        )
 
         self.__threaded_prnet = ThreadedPRNet(
             self.__prn,
-            self.__reference_original_face
-        ).start(self.__face_detecting_grabber.read().output_frame.copy())
+            self.__image_grabber.read()
+        )
+
+        self.__face_detecting_grabber.start(self.__image_grabber.read())
+        self.__threaded_prnet.start(self.__face_detecting_grabber.read().output_frame.copy())
 
         self.__stream_output = subprocess.Popen(
             [f'ffmpeg -i - -vcodec rawvideo -pix_fmt bgr24 -threads 0 -f v4l2 {output_device}'],
@@ -103,7 +105,8 @@ class ReflectionAppThreaded:
         # self.__write_to_v4l2_loopback(cv2.resize(rectangled_frame, (640, 480), interpolation=cv2.INTER_AREA))
 
         if prn_result is not None:
-            self.__write_to_v4l2_loopback(self.__scale_cropped_face_image(prn_result.pose, 992, 992))
+            self.__write_to_v4l2_loopback(cv2.cvtColor(self.__scale_cropped_face_image(prn_result.pose, 992, 992),
+                                                       cv2.COLOR_BGR2GRAY))
 
         if os.environ['DEBUG'] == "1":
             self.__windows_shower.update_window(self.DETECTED_FACE_WINDOW,
@@ -195,4 +198,4 @@ class ReflectionAppThreaded:
 
 os.environ['DEBUG'] = "1"
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-ReflectionAppThreaded("/dev/video0", "/dev/video2").start()
+ReflectionAppThreaded("/dev/video0", "/dev/video1").start()
