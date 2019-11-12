@@ -1,24 +1,31 @@
+import os
 import threading
 import time
 
 import cv2
 import numpy as np
 import prnet
-from prnet.utils import estimate_pose, plot_pose_box
+from prnet.utils import estimate_pose, plot_pose_box, plot_kpt
 
 TEXTURE_SIZE = 256
 
 
 class PRNResult:
-    pose: np.ndarray
+    face_texture: np.ndarray
+    face_with_pose: np.ndarray
+    face_with_landmarks: np.ndarray
 
-    def __init__(self, pose: np.ndarray) -> None:
-        self.pose = pose
+    def __init__(self, face_texture: np.ndarray,
+                 face_with_landmarks: np.ndarray = None,
+                 face_with_pose: np.ndarray = None) -> None:
+        self.face_texture = face_texture
+        self.face_with_landmarks = face_with_landmarks
+        self.face_with_pose = face_with_pose
 
 
 class ThreadedPRNet:
     stopped: bool = False
-    __source_frame: np.ndarray
+    __source_frame: np.ndarray = None
 
     __prn_result: PRNResult = None
 
@@ -32,25 +39,14 @@ class ThreadedPRNet:
 
     __prn_pos: any
 
-    def __init__(self, prn: prnet.PRN, source_frame: np.ndarray):
+    def __init__(self, prn: prnet.PRN):
         self.__prn = prn
-        self.__source_frame = source_frame
 
-        self.__init()
-
-    def start(self, source_frame: np.ndarray) -> 'ThreadedPRNet':
-        self.__source_frame = source_frame
-        self.__init()
-
+    def start(self) -> 'ThreadedPRNet':
         self.__thread = threading.Thread(target=self.grab, args=(), daemon=True)
         self.__thread.start()
 
         return self
-
-    def __init(self):
-        box = np.array(
-            [0, self.__source_frame.shape[1] - 1, 0, self.__source_frame.shape[0] - 1])  # cropped with bounding box
-        self.__prn_pos = self.__prn.process(self.__source_frame, box)
 
     def stop(self) -> None:
         self.stopped = True
@@ -71,7 +67,6 @@ class ThreadedPRNet:
                 [0, source_frame.shape[1] - 1, 0, source_frame.shape[0] - 1])  # cropped with bounding box
             prn_pos = self.__prn.process(source_frame, box)
 
-            source_frame = source_frame / 255.
             if prn_pos is None:
                 continue
 
@@ -86,10 +81,20 @@ class ThreadedPRNet:
             # # estimate pose
             camera_matrix, pose = estimate_pose(vertices)
 
-            pose = plot_pose_box((source_frame * 255).astype(np.uint8), camera_matrix, kpt)
+            face_angle_x, face_angle_y, face_angle_z = pose
+
+            if os.environ['DEBUG'] == "1":
+                print(f"x: {face_angle_x}  y: {face_angle_y}  z: {face_angle_z}")
 
             try:
-                self.__prn_result = PRNResult(self.__extract_texture(source_frame, prn_pos))
+                if os.environ['DEBUG'] == "1":
+                    self.__prn_result = PRNResult(
+                        self.__extract_texture((source_frame / 255).astype(np.float32), prn_pos),
+                        face_with_landmarks=plot_kpt(source_frame.copy(), kpt),
+                        face_with_pose=plot_pose_box(source_frame.copy(), camera_matrix, kpt))
+                else:
+                    self.__prn_result = PRNResult(
+                        self.__extract_texture((source_frame / 255.).astype(np.float32), prn_pos))
             except Exception as err:
                 print("errrrrrror: " + str(err))
 
@@ -107,9 +112,7 @@ class ThreadedPRNet:
         return self.__prn_result
 
     def __extract_texture(self, new_face: np.ndarray, prn_pos: any):
-        ref_pos = prn_pos.astype(np.uint8)
-
-        new_texture = cv2.remap(new_face, ref_pos[:, :, :2].astype(np.float32), None, interpolation=cv2.INTER_NEAREST,
+        new_texture = cv2.remap(new_face, prn_pos[:, :, :2].astype(np.float32), None, interpolation=cv2.INTER_AREA,
                                 borderMode=cv2.BORDER_CONSTANT, borderValue=(0))
 
-        return (new_texture * 256).astype(np.uint8)
+        return (new_texture * 255).astype(np.uint8)

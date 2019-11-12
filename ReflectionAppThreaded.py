@@ -59,12 +59,11 @@ class ReflectionAppThreaded:
         )
 
         self.__threaded_prnet = ThreadedPRNet(
-            self.__prn,
-            self.__image_grabber.read()
+            self.__prn
         )
 
         self.__face_detecting_grabber.start(self.__image_grabber.read())
-        self.__threaded_prnet.start(self.__face_detecting_grabber.read().output_frame.copy())
+        self.__threaded_prnet.start()
 
         self.__stream_output = subprocess.Popen(
             [f'ffmpeg -i - -vcodec rawvideo -pix_fmt bgr24 -threads 0 -f v4l2 {output_device}'],
@@ -105,8 +104,22 @@ class ReflectionAppThreaded:
         # self.__write_to_v4l2_loopback(cv2.resize(rectangled_frame, (640, 480), interpolation=cv2.INTER_AREA))
 
         if prn_result is not None:
-            self.__write_to_v4l2_loopback(cv2.cvtColor(self.__scale_cropped_face_image(prn_result.pose, 992, 992),
-                                                       cv2.COLOR_BGR2GRAY))
+            self.__write_to_v4l2_loopback(
+                cv2.cvtColor(self.__scale_cropped_face_image(prn_result.face_texture, 992, 992),
+                             cv2.COLOR_BGR2GRAY))
+            if os.environ['DEBUG'] == "1":
+                self.__windows_shower.update_window(
+                    "face_texture",
+                    self.__scale_cropped_face_image(prn_result.face_texture.copy(), self.CROPPED_FACE_BASE_HEIGHT,
+                                                    self.CROPPED_FACE_BASE_WIDTH))
+                self.__windows_shower.update_window(
+                    "face_with_pose",
+                    self.__scale_cropped_face_image(prn_result.face_with_pose, self.CROPPED_FACE_BASE_HEIGHT,
+                                                    self.CROPPED_FACE_BASE_WIDTH))
+                self.__windows_shower.update_window(
+                    "face_with_landmarks",
+                    self.__scale_cropped_face_image(prn_result.face_with_landmarks, self.CROPPED_FACE_BASE_HEIGHT,
+                                                    self.CROPPED_FACE_BASE_WIDTH))
 
         if os.environ['DEBUG'] == "1":
             self.__windows_shower.update_window(self.DETECTED_FACE_WINDOW,
@@ -121,7 +134,6 @@ class ReflectionAppThreaded:
 
         encoded_image = cv2.imencode('.jpg', source_frame)[1].tobytes()
         self.__stream_output.stdin.write(encoded_image)
-        # self.__stream_output.stdin.flush()
 
     CROPPED_FACE_BASE_HEIGHT = 480
     CROPPED_FACE_BASE_WIDTH = 480
