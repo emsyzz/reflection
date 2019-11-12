@@ -1,0 +1,65 @@
+// Splash configuration file
+// Exported with Blender Splash add-on
+{
+    "description" : "splashConfiguration",
+    "world" : {
+        "framerate" : 60
+    },
+    "scenes" : [
+        {
+            "name" : "GPU",
+            "display" : 0,
+            "swapInterval" : 1
+        }
+    ],
+    "GPU" : {
+        "Gui" : {
+            "type" : "window",
+            "decorated" : 1,
+            "position" : [0.0, 0.0],
+            "size" : [732, 932]
+        },
+        "Window" : {
+            "type" : "window",
+            "decorated" : 0,
+            "fullscreen" : -1,
+            "position" : [0, 0],
+            "size" : [1920, 1080],
+            "srgb" : 1,
+            "layout" : [0]
+        },
+        "Camera" : {
+            "type" : "camera",
+            "eye" : [0.001751970499753952, -13.965608596801758, 0.23143494129180908],
+            "target" : [0.001751970499753952, -12.965608596801758, 0.23143507540225983],
+            "up" : [0.0, -1.3435885648505064e-07, 1.0000001192092896],
+            "fov" : 28.841546110078532,
+            "principalPoint" : [0.5, 0.5],
+            "size" : [1920, 1080]
+        },
+        "Object" : {
+            "type" : "object",
+            "color" : [1.0, 1.0, 1.0, 1.0],
+            "sideness" : 0
+        },
+        "Image" : {
+            "type" : "image",
+            "file" : "/home/manu/src/splash/data/color_map.png",
+            "flip" : 0,
+            "flop" : 0,
+            "srgb" : 1
+        },
+        "Mesh" : {
+            "type" : "mesh",
+            "file" : "splash_Face cloth.obj"
+        },
+        "links" : [
+            ["Gui", "GPU"],
+            ["Window", "GPU"],
+            ["Camera", "Window"],
+            ["Object", "Camera"],
+            ["Image", "Object"],
+            ["Mesh", "Object"]
+        ]
+    }
+}
