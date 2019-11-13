@@ -58,7 +58,7 @@ class FaceDetectingGrabber:
             with self.__write_lock:
                 if self.__source_frame is None:
                     continue
-                source_frame = self.__source_frame.copy()
+                source_frame = self.__source_frame
 
             detected_face = self.__fd.detect_face(source_frame)
 

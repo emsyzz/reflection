@@ -15,10 +15,21 @@ class ThreadedImageGrabber:
 
     __frame_id: int
 
-    def __init__(self, src: any):
+    def __init__(self, src: any, rotation: any, height: int, width: int):
         self.__stream = cv2.VideoCapture(src)
+        self.__rotation = rotation
+        self.__height = height
+        self.__width = width
 
-        (self.__grabbed, self.__frame) = self.__stream.read()
+        self.calc_frame()
+
+    def calc_frame(self):
+        (self.__grabbed, frame) = self.__stream.read()
+        if self.__height is not None:
+            frame = cv2.resize(frame, (self.__height, self.__width))
+        if self.__rotation is not None:
+            frame = cv2.rotate(frame, self.__rotation)
+        self.__frame = frame
 
     def start(self) -> 'ThreadedImageGrabber':
         self.__frame_id = 0
@@ -34,7 +45,7 @@ class ThreadedImageGrabber:
             if not self.__grabbed:
                 self.stop()
             else:
-                (self.__grabbed, self.__frame) = self.__stream.read()
+                self.calc_frame()
                 self.__frame_id += 1
             counter += 1
             if (time.time() - start_time) > x:

@@ -11,13 +11,15 @@ TEXTURE_SIZE = 256
 
 
 class PRNResult:
+    id: int
     face_texture: np.ndarray
     face_with_pose: np.ndarray
     face_with_landmarks: np.ndarray
 
-    def __init__(self, face_texture: np.ndarray,
+    def __init__(self, id: int, face_texture: np.ndarray,
                  face_with_landmarks: np.ndarray = None,
                  face_with_pose: np.ndarray = None) -> None:
+        self.id = id
         self.face_texture = face_texture
         self.face_with_landmarks = face_with_landmarks
         self.face_with_pose = face_with_pose
@@ -44,6 +46,7 @@ class ThreadedPRNet:
 
     def start(self) -> 'ThreadedPRNet':
         self.__event = threading.Event()
+        self.__last_result_id = 0
 
         self.__thread = threading.Thread(target=self.grab, args=(), daemon=True)
         self.__thread.start()
@@ -53,6 +56,8 @@ class ThreadedPRNet:
     def stop(self) -> None:
         self.stopped = True
         self.__thread.join()
+
+    __last_result_id: int
 
     def grab(self) -> None:
         start_time = time.time()
@@ -64,7 +69,7 @@ class ThreadedPRNet:
             with self.__write_lock:
                 if self.__source_frame is None:
                     continue
-                source_frame = self.__source_frame.copy()
+                source_frame = self.__source_frame
                 [h, w, c] = source_frame.shape
 
             box = np.array(
@@ -93,11 +98,13 @@ class ThreadedPRNet:
             try:
                 if os.environ['DEBUG'] == "1":
                     self.__prn_result = PRNResult(
+                        self.__last_result_id,
                         self.__extract_texture((source_frame / 255).astype(np.float32), prn_pos),
                         face_with_landmarks=plot_kpt(source_frame.copy(), kpt),
                         face_with_pose=plot_pose_box(source_frame.copy(), camera_matrix, kpt))
                 else:
                     self.__prn_result = PRNResult(
+                        self.__last_result_id,
                         self.__extract_texture((source_frame / 255.).astype(np.float32), prn_pos))
             except Exception as err:
                 print("errrrrrror: " + str(err))

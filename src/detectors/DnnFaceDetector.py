@@ -32,7 +32,7 @@ class DnnFaceDetector(AbstractFaceDetector):
     def detect_face(self, face_searching_frame) -> 'DetectedFace':
         try:
             imageBlob = cv2.dnn.blobFromImage(
-                face_searching_frame, 1.0, (100, 100),
+                face_searching_frame, 1.0, (300, 300),
                 (104.0, 177.0, 123.0), swapRB=False, crop=False)
         except Exception as e:
             print(str(e))

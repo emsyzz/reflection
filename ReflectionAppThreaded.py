@@ -23,6 +23,7 @@ class ReflectionAppThreaded:
     PRNET_WINDOW = "PRNET_WINDOW"
 
     __last_frame_id: int
+    __last_result_id: int
     __stream_width: int
     __stream_height: int
     __sfad: SearchingFaceAreaProvider
@@ -34,9 +35,11 @@ class ReflectionAppThreaded:
     __threaded_image_publisher: ThreadedImagePublisher
     __prn: prnet.PRN
 
-    def __init__(self, source_device="/dev/video0", output_device="/dev/video1"):
+    def __init__(self, source_device="/dev/video0", output_device="/dev/video1", rotation: int = None,
+                 height: int = None, width: int = None):
         self.__prn = prnet.PRN(is_dlib=False)
-        self.__stream_width, self.__stream_height = self.get_video_capturer_dimensions(source_device)
+        self.__stream_width, self.__stream_height = self.get_video_capturer_dimensions(source_device, rotation, height,
+                                                                                       width)
         self.__sfad = SearchingFaceAreaProvider(self.__stream_width, self.__stream_height)
 
         if os.environ['DEBUG'] == "1":
@@ -47,11 +50,13 @@ class ReflectionAppThreaded:
             }).start()
 
         self.__last_frame_id = 0
-        self.__image_grabber = ThreadedImageGrabber(source_device).start()
-        self.__capture_area_drawer = CaptureAreaDrawer(
-            self.__image_grabber.read().copy(),
-            self.__sfad.face_searching_area
-        ).start()
+        self.__last_result_id = 0
+        self.__image_grabber = ThreadedImageGrabber(source_device, rotation, height, width).start()
+        if os.environ['DEBUG'] == "1":
+            self.__capture_area_drawer = CaptureAreaDrawer(
+                self.__image_grabber.read().copy(),
+                self.__sfad.face_searching_area
+            ).start()
 
         face_detector: FaceDetector = DnnFaceDetector(True)
 
@@ -67,7 +72,8 @@ class ReflectionAppThreaded:
         self.__face_detecting_grabber.start(self.__image_grabber.read())
         self.__threaded_prnet.start()
 
-        self.__threaded_image_publisher = ThreadedImagePublisher(np.zeros((992, 992, 3), np.uint8), output_device).start()
+        self.__threaded_image_publisher = ThreadedImagePublisher(np.zeros((992, 992, 3), np.uint8),
+                                                                 output_device).start()
 
     def loop(self):
         frame_id = self.__image_grabber.read_frame_id()
@@ -79,27 +85,30 @@ class ReflectionAppThreaded:
 
         camera_frame = self.__image_grabber.read()
 
-        self.__capture_area_drawer.update_source_frame(camera_frame.copy())
         self.__face_detecting_grabber.update_source_frame(camera_frame)
 
-        rectangled_frame: RectCoordinates = self.__capture_area_drawer.read()
+        if os.environ['DEBUG'] == "1":
+            self.__capture_area_drawer.update_source_frame(camera_frame.copy())
+            rectangled_frame: RectCoordinates = self.__capture_area_drawer.read()
+
         detected_object: DetectedObject = self.__face_detecting_grabber.read()
         prn_result: PRNResult = self.__threaded_prnet.read()
 
         if detected_object.detected_face.is_face_detected:
             self.__sfad.update_next_searching_frame(detected_object.detected_face.detected_face_area)
-            self.__threaded_prnet.update_source_frame(self.__face_detecting_grabber.read().output_frame.copy())
+            self.__threaded_prnet.update_source_frame(self.__face_detecting_grabber.read().output_frame)
         else:
             self.__sfad.update_not_found_face()
 
-        self.__capture_area_drawer.update_rectangle(self.__sfad.face_searching_area)
-
         if os.environ['DEBUG'] == "1":
-            self.__windows_shower.update_window(self.FACE_SEARCHING_AREA_WINDOW, rectangled_frame)
+            self.__capture_area_drawer.update_rectangle(self.__sfad.face_searching_area)
+            self.__windows_shower.update_window(self.FACE_SEARCHING_AREA_WINDOW,
+                                                cv2.resize(rectangled_frame, (432, 768)))
 
         # self.__write_to_v4l2_loopback(cv2.resize(rectangled_frame, (640, 480), interpolation=cv2.INTER_AREA))
 
-        if prn_result is not None:
+        if prn_result is not None and self.__last_result_id != prn_result.id:
+            self.__last_result_id = prn_result.id
             self.__write_to_v4l2_loopback(
                 cv2.cvtColor(self.__scale_cropped_face_image(prn_result.face_texture, 992, 992),
                              cv2.COLOR_BGR2GRAY))
@@ -119,7 +128,7 @@ class ReflectionAppThreaded:
 
         if os.environ['DEBUG'] == "1":
             self.__windows_shower.update_window(self.DETECTED_FACE_WINDOW,
-                                                self.__scale_cropped_face_image(detected_object.output_frame))
+                                                self.__scale_cropped_face_image(detected_object.output_frame.copy()))
 
     def __write_to_v4l2_loopback(self, source_frame: np.ndarray):
         self.__threaded_image_publisher.update_frame(source_frame)
@@ -173,30 +182,39 @@ class ReflectionAppThreaded:
 
             self.loop()
 
-    def get_video_capturer_dimensions(self, source):
+    def get_video_capturer_dimensions(self, source, rotation: int, height: int = None, width: int = None):
         # Init input video stuff
         video_capture = cv2.VideoCapture(source)
         if not video_capture.isOpened():
             print("Video not opened. Exiting.")
             exit()
-        stream_width = video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)
-        stream_height = video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        (grabbed, frame) = video_capture.read()
+        if height is not None:
+            frame = cv2.resize(frame, (height, width))
+
+        if rotation is not None:
+            frame = cv2.rotate(frame, rotation)
+
+        (height, width) = frame.shape[:2]
+        stream_width = width
+        stream_height = height
+
         del video_capture
 
         return stream_width, stream_height
 
     def stop(self):
         self.__image_grabber.stop()
-        self.__capture_area_drawer.stop()
         if os.environ['DEBUG'] == "1":
+            self.__capture_area_drawer.stop()
             self.__windows_shower.stop()
 
     def is_stopped(self):
         return self.__image_grabber.stopped \
-               or self.__capture_area_drawer.stopped \
+               or (os.environ['DEBUG'] == "1" and self.__capture_area_drawer.stopped) \
                or (os.environ['DEBUG'] == "1" and self.__windows_shower.stopped)
 
 
 os.environ['DEBUG'] = "1"
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-ReflectionAppThreaded("/dev/video0", "/dev/video1").start()
+ReflectionAppThreaded("/dev/video1", "/dev/video2", cv2.ROTATE_90_CLOCKWISE).start()
