@@ -51,7 +51,7 @@ class ThreadedImagePublisher:
 
             counter += 1
             if (time.time() - start_time) > x:
-                print("Image grabber FPS: ", counter / (time.time() - start_time))
+                print("Image publisher FPS: ", counter / (time.time() - start_time))
                 counter = 0
                 start_time = time.time()
 
