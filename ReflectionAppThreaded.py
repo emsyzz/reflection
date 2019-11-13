@@ -9,6 +9,7 @@ from src import RectCoordinates
 from src.CaptureAreaDrawer import CaptureAreaDrawer
 from src.FaceDetectingGrabber import FaceDetectingGrabber, DetectedObject
 from src.SearchingFaceAreaProvider import SearchingFaceAreaProvider
+from src.ThreadedAnglePublisher import ThreadedAnglePublisher
 from src.ThreadedImageGrabber import ThreadedImageGrabber
 from src.ThreadedImagePublisher import ThreadedImagePublisher
 from src.ThreadedImageShower import ThreadedImageShower
@@ -33,11 +34,14 @@ class ReflectionAppThreaded:
     __face_detecting_grabber: FaceDetectingGrabber
     __threaded_prnet: ThreadedPRNet
     __threaded_image_publisher: ThreadedImagePublisher
+    __threaded_angle_publisher: ThreadedAnglePublisher
     __prn: prnet.PRN
 
     def __init__(self, source_device="/dev/video0", output_device="/dev/video1", rotation: int = None,
-                 height: int = None, width: int = None, is_gray: bool = False):
+                 height: int = None, width: int = None, is_gray: bool = False,
+                 serial_device: str = None):
         self.__is_gray = is_gray
+        self.__serial_device = serial_device
         self.__prn = prnet.PRN(is_dlib=False)
         self.__stream_width, self.__stream_height = self.get_video_capturer_dimensions(source_device, rotation, height,
                                                                                        width)
@@ -76,6 +80,9 @@ class ReflectionAppThreaded:
         self.__threaded_image_publisher = ThreadedImagePublisher(np.zeros((992, 992, 3), np.uint8),
                                                                  output_device).start()
 
+        if self.__serial_device is not None:
+            self.__threaded_angle_publisher = ThreadedAnglePublisher(serial_device, (-0.6, 0.6), (-100, 100)).start()
+
     def loop(self):
         frame_id = self.__image_grabber.read_frame_id()
         if frame_id == self.__last_frame_id:
@@ -111,12 +118,12 @@ class ReflectionAppThreaded:
         if prn_result is not None and self.__last_result_id != prn_result.id:
             self.__last_result_id = prn_result.id
             if self.__is_gray:
-                self.__write_to_v4l2_loopback(
+                self.__send_result(
                     cv2.cvtColor(self.__scale_cropped_face_image(prn_result.face_texture, 992, 992),
-                                 cv2.COLOR_BGR2GRAY))
+                                 cv2.COLOR_BGR2GRAY), prn_result.face_angle)
             else:
-                self.__write_to_v4l2_loopback(
-                    self.__scale_cropped_face_image(prn_result.face_texture, 992, 992))
+                self.__send_result(
+                    self.__scale_cropped_face_image(prn_result.face_texture, 992, 992), prn_result.face_angle)
             if os.environ['DEBUG'] == "1":
                 self.__windows_shower.update_window(
                     "face_texture",
@@ -135,8 +142,10 @@ class ReflectionAppThreaded:
             self.__windows_shower.update_window(self.DETECTED_FACE_WINDOW,
                                                 self.__scale_cropped_face_image(detected_object.output_frame.copy()))
 
-    def __write_to_v4l2_loopback(self, source_frame: np.ndarray):
+    def __send_result(self, source_frame: np.ndarray, face_angle: float):
         self.__threaded_image_publisher.update_frame(source_frame)
+        if self.__serial_device is not None:
+            self.__threaded_angle_publisher.update_angle(face_angle)
 
     CROPPED_FACE_BASE_HEIGHT = 480
     CROPPED_FACE_BASE_WIDTH = 480

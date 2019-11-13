@@ -15,12 +15,14 @@ class PRNResult:
     face_texture: np.ndarray
     face_with_pose: np.ndarray
     face_with_landmarks: np.ndarray
+    face_angle: float
 
-    def __init__(self, id: int, face_texture: np.ndarray,
+    def __init__(self, id: int, face_texture: np.ndarray, face_angle: float,
                  face_with_landmarks: np.ndarray = None,
                  face_with_pose: np.ndarray = None) -> None:
         self.id = id
         self.face_texture = face_texture
+        self.face_angle = face_angle
         self.face_with_landmarks = face_with_landmarks
         self.face_with_pose = face_with_pose
 
@@ -93,19 +95,22 @@ class ThreadedPRNet:
             face_angle_x, face_angle_y, face_angle_z = pose
 
             if os.environ['DEBUG'] == "1":
-                print(f"x: {face_angle_x}  y: {face_angle_y}  z: {face_angle_z}")
+                # 0 < face_angle_x : Face positioned to the right
+                print(f"Face angle: {face_angle_x}")
 
             try:
                 if os.environ['DEBUG'] == "1":
                     self.__prn_result = PRNResult(
                         self.__last_result_id,
                         self.__extract_texture((source_frame / 255).astype(np.float32), prn_pos),
+                        face_angle_x,
                         face_with_landmarks=plot_kpt(source_frame.copy(), kpt),
                         face_with_pose=plot_pose_box(source_frame.copy(), camera_matrix, kpt))
                 else:
                     self.__prn_result = PRNResult(
                         self.__last_result_id,
-                        self.__extract_texture((source_frame / 255.).astype(np.float32), prn_pos))
+                        self.__extract_texture((source_frame / 255.).astype(np.float32), prn_pos),
+                        face_angle_x)
             except Exception as err:
                 print("errrrrrror: " + str(err))
 
