@@ -36,7 +36,8 @@ class ReflectionAppThreaded:
     __prn: prnet.PRN
 
     def __init__(self, source_device="/dev/video0", output_device="/dev/video1", rotation: int = None,
-                 height: int = None, width: int = None):
+                 height: int = None, width: int = None, is_gray: bool = False):
+        self.__is_gray = is_gray
         self.__prn = prnet.PRN(is_dlib=False)
         self.__stream_width, self.__stream_height = self.get_video_capturer_dimensions(source_device, rotation, height,
                                                                                        width)
@@ -109,9 +110,13 @@ class ReflectionAppThreaded:
 
         if prn_result is not None and self.__last_result_id != prn_result.id:
             self.__last_result_id = prn_result.id
-            self.__write_to_v4l2_loopback(
-                cv2.cvtColor(self.__scale_cropped_face_image(prn_result.face_texture, 992, 992),
-                             cv2.COLOR_BGR2GRAY))
+            if self.__is_gray:
+                self.__write_to_v4l2_loopback(
+                    cv2.cvtColor(self.__scale_cropped_face_image(prn_result.face_texture, 992, 992),
+                                 cv2.COLOR_BGR2GRAY))
+            else:
+                self.__write_to_v4l2_loopback(
+                    self.__scale_cropped_face_image(prn_result.face_texture, 992, 992))
             if os.environ['DEBUG'] == "1":
                 self.__windows_shower.update_window(
                     "face_texture",
@@ -152,7 +157,7 @@ class ReflectionAppThreaded:
             new_image = cv2.resize(
                 source_frame,
                 (new_width_size, height),
-                interpolation=cv2.INTER_AREA
+                interpolation=cv2.INTER_LINEAR
             )
             new_image = np.concatenate((width_fill, new_image, width_fill, rounding_fix_fill), axis=1)
         else:
@@ -168,7 +173,7 @@ class ReflectionAppThreaded:
             new_image = cv2.resize(
                 source_frame,
                 (width, new_height_size),
-                interpolation=cv2.INTER_AREA
+                interpolation=cv2.INTER_LINEAR
             )
             new_image = np.concatenate((height_fill, new_image, height_fill, rounding_fix_fill), axis=0)
 
@@ -189,6 +194,11 @@ class ReflectionAppThreaded:
             print("Video not opened. Exiting.")
             exit()
         (grabbed, frame) = video_capture.read()
+
+        if not grabbed:
+            print("could not grab")
+            exit(1)
+
         if height is not None:
             frame = cv2.resize(frame, (height, width))
 
@@ -217,4 +227,4 @@ class ReflectionAppThreaded:
 
 os.environ['DEBUG'] = "1"
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-ReflectionAppThreaded("/dev/video1", "/dev/video2", cv2.ROTATE_90_CLOCKWISE).start()
+ReflectionAppThreaded("/dev/video1", "/dev/video2", rotation=cv2.ROTATE_90_CLOCKWISE, is_gray=True).start()
