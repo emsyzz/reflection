@@ -109,6 +109,8 @@ class ThreadedPRNet:
             except Exception as err:
                 print("errrrrrror: " + str(err))
 
+            self.__last_result_id += 1
+
             counter += 1
             if (time.time() - start_time) > x:
                 print("PRNET FPS: ", counter / (time.time() - start_time))
