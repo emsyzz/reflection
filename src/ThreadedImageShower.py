@@ -24,7 +24,8 @@ class ThreadedImageShower:
                 self.stopped = True
                 break
 
-            for window_name, frame in self.windows.items():
+            for window_name in list(self.windows):
+                frame = self.windows[window_name]
                 if frame is None:
                     continue
 

@@ -1,8 +1,4 @@
 import os
-import subprocess
-from multiprocessing import Queue
-from queue import Empty
-from threading import Thread
 
 import cv2
 import numpy as np
@@ -13,6 +9,7 @@ from src.CaptureAreaDrawer import CaptureAreaDrawer
 from src.FaceDetectingGrabber import FaceDetectingGrabber, DetectedObject
 from src.SearchingFaceAreaProvider import SearchingFaceAreaProvider
 from src.ThreadedImageGrabber import ThreadedImageGrabber
+from src.ThreadedImagePublisher import ThreadedImagePublisher
 from src.ThreadedImageShower import ThreadedImageShower
 from src.ThreadedPRNet import ThreadedPRNet, PRNResult
 from src.detectors import FaceDetector
@@ -32,6 +29,7 @@ class ReflectionAppThreaded:
     __image_grabber: ThreadedImageGrabber
     __face_detecting_grabber: FaceDetectingGrabber
     __threaded_prnet: ThreadedPRNet
+    __threaded_image_publisher: ThreadedImagePublisher
     __prn: prnet.PRN
 
     def __init__(self, source_device="/dev/video0", output_device="/dev/video1"):
@@ -65,20 +63,7 @@ class ReflectionAppThreaded:
         self.__face_detecting_grabber.start(self.__image_grabber.read())
         self.__threaded_prnet.start()
 
-        self.__stream_output = subprocess.Popen(
-            [f'ffmpeg -i - -vcodec rawvideo -pix_fmt bgr24 -threads 0 -f v4l2 {output_device}'],
-            stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True,
-            stderr=subprocess.STDOUT, bufsize=1)
-
-        self.q = Queue()
-        t = Thread(target=self.enqueue_output, args=(self.__stream_output.stdout, self.q))
-        t.daemon = True  # thread dies with the program
-        t.start()
-
-    def enqueue_output(self, out, queue):
-        for line in iter(out.readline, b''):
-            queue.put(line)
-        out.close()
+        self.__threaded_image_publisher = ThreadedImagePublisher(np.zeros((992, 992, 3), np.uint8), output_device).start()
 
     def loop(self):
         camera_frame = self.__image_grabber.read()
@@ -123,17 +108,10 @@ class ReflectionAppThreaded:
 
         if os.environ['DEBUG'] == "1":
             self.__windows_shower.update_window(self.DETECTED_FACE_WINDOW,
-                                            self.__scale_cropped_face_image(detected_object.output_frame))
+                                                self.__scale_cropped_face_image(detected_object.output_frame))
 
     def __write_to_v4l2_loopback(self, source_frame: np.ndarray):
-        try:
-            line = self.q.get_nowait()  # or q.get(timeout=.1)
-            print(line)
-        except Empty:
-            pass
-
-        encoded_image = cv2.imencode('.jpg', source_frame)[1].tobytes()
-        self.__stream_output.stdin.write(encoded_image)
+        self.__threaded_image_publisher.update_frame(source_frame)
 
     CROPPED_FACE_BASE_HEIGHT = 480
     CROPPED_FACE_BASE_WIDTH = 480
