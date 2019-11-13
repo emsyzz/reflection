@@ -10,6 +10,7 @@ import cv2
 class ThreadedImagePublisher:
     __thread: threading.Thread
     stopped: bool = False
+    __event: threading.Event
 
     def __init__(self, frame, output_device):
         self.__frame = frame
@@ -23,6 +24,7 @@ class ThreadedImagePublisher:
         t = threading.Thread(target=self.enqueue_output, args=(self.__stream_output.stdout, self.q))
         t.daemon = True  # thread dies with the program
         t.start()
+        self.__event = threading.Event()
 
         self.__thread = threading.Thread(target=self.publish, args=(), daemon=True)
         self.__thread.start()
@@ -53,9 +55,13 @@ class ThreadedImagePublisher:
                 counter = 0
                 start_time = time.time()
 
+            self.__event.wait()
+            self.__event.clear()
+
     def stop(self):
         self.stopped = True
         self.__thread.join()
 
     def update_frame(self, frame):
         self.__frame = frame
+        self.__event.set()
