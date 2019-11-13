@@ -20,13 +20,14 @@ class ThreadedImageShower:
 
     def show(self):
         while not self.stopped:
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            if cv2.waitKey(25) & 0xFF == ord('q'):
                 cv2.destroyAllWindows()
                 self.stopped = True
                 break
 
             if not self.__event.isSet():
                 continue
+            self.__event.clear()
 
             for window_name in list(self.windows):
                 frame = self.windows[window_name]
@@ -34,8 +35,6 @@ class ThreadedImageShower:
                     continue
 
                 cv2.imshow(window_name, frame)
-
-            self.__event.clear()
 
     def stop(self):
         self.stopped = True

@@ -1,4 +1,5 @@
 import os
+import time
 
 import cv2
 import numpy as np
@@ -21,6 +22,7 @@ class ReflectionAppThreaded:
     FACE_SEARCHING_AREA_WINDOW = "Face searching area"
     PRNET_WINDOW = "PRNET_WINDOW"
 
+    __last_frame_id: int
     __stream_width: int
     __stream_height: int
     __sfad: SearchingFaceAreaProvider
@@ -43,6 +45,8 @@ class ReflectionAppThreaded:
                 self.DETECTED_FACE_WINDOW: None,
                 self.PRNET_WINDOW: None
             }).start()
+
+        self.__last_frame_id = 0
         self.__image_grabber = ThreadedImageGrabber(source_device).start()
         self.__capture_area_drawer = CaptureAreaDrawer(
             self.__image_grabber.read().copy(),
@@ -66,6 +70,13 @@ class ReflectionAppThreaded:
         self.__threaded_image_publisher = ThreadedImagePublisher(np.zeros((992, 992, 3), np.uint8), output_device).start()
 
     def loop(self):
+        frame_id = self.__image_grabber.read_frame_id()
+        if frame_id == self.__last_frame_id:
+            time.sleep(0.025)
+            return
+
+        self.__last_frame_id = frame_id
+
         camera_frame = self.__image_grabber.read()
 
         self.__capture_area_drawer.update_source_frame(camera_frame.copy())

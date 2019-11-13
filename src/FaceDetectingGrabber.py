@@ -35,6 +35,7 @@ class FaceDetectingGrabber:
     def start(self, source_frame: np.ndarray) -> 'FaceDetectingGrabber':
         self.__source_frame = source_frame
         self.__init()
+        self.__event = threading.Event()
         self.__thread = threading.Thread(target=self.grab, args=(), daemon=True)
         self.__thread.start()
         return self
@@ -52,6 +53,8 @@ class FaceDetectingGrabber:
         x = 1  # displays the frame rate every 1 second
         counter = 0
         while not self.stopped:
+            self.__event.wait()
+            self.__event.clear()
             with self.__write_lock:
                 if self.__source_frame is None:
                     continue
@@ -92,6 +95,7 @@ class FaceDetectingGrabber:
     def update_source_frame(self, source_frame) -> None:
         with self.__write_lock:
             self.__source_frame = source_frame
+        self.__event.set()
 
     def read(self) -> DetectedObject:
         return self.__detected_object

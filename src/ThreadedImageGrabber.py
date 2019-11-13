@@ -13,12 +13,15 @@ class ThreadedImageGrabber:
     __grabbed: bool
     __frame: np.ndarray
 
+    __frame_id: int
+
     def __init__(self, src: any):
         self.__stream = cv2.VideoCapture(src)
 
         (self.__grabbed, self.__frame) = self.__stream.read()
 
     def start(self) -> 'ThreadedImageGrabber':
+        self.__frame_id = 0
         self.__thread = threading.Thread(target=self.grab, args=(), daemon=True)
         self.__thread.start()
         return self
@@ -32,6 +35,7 @@ class ThreadedImageGrabber:
                 self.stop()
             else:
                 (self.__grabbed, self.__frame) = self.__stream.read()
+                self.__frame_id += 1
             counter += 1
             if (time.time() - start_time) > x:
                 print("Image grabber FPS: ", counter / (time.time() - start_time))
@@ -41,6 +45,9 @@ class ThreadedImageGrabber:
     def stop(self) -> None:
         self.stopped = True
         self.__thread.join()
+
+    def read_frame_id(self) -> int:
+        return self.__frame_id
 
     def read(self) -> np.ndarray:
         return self.__frame
