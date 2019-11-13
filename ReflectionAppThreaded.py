@@ -236,4 +236,4 @@ class ReflectionAppThreaded:
 
 os.environ['DEBUG'] = "1"
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-ReflectionAppThreaded("/dev/video1", "/dev/video2", rotation=cv2.ROTATE_90_CLOCKWISE, is_gray=True).start()
+ReflectionAppThreaded("/dev/video0", "/dev/video2", rotation=cv2.ROTATE_90_CLOCKWISE, is_gray=True, serial_device='/dev/ttyUSB0').start()

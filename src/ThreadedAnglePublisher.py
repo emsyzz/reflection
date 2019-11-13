@@ -36,12 +36,13 @@ class ThreadedAnglePublisher:
             s.flushInput()  # Flush startup text in serial input
 
             gcode_sender.send_immediate('$X')
+            gcode_sender.send_immediate('$H')
 
             # Stream g-code to grbl
             while not self.stopped:
                 face_angle = self.__face_angle
                 print('Input: %s' % face_angle)
-                g = convert_angle(face_angle, self.__angle_limit, self.__angle_limit,
+                g = convert_angle(face_angle, self.__angle_limit, self.__angle_mapping,
                                   offset=0)
                 print('Gcode: %s' % g)
                 gcode_sender.send_immediate(g)
