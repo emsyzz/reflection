@@ -43,7 +43,7 @@ class ThreadedAnglePublisher:
             while not self.stopped:
                 face_angle = self.__face_angle
                 print('Input: %s' % face_angle)
-                g = convert_angle(face_angle, self.__angle_limit, self.__angle_mapping,
+                g = convert_angle(-face_angle, self.__angle_limit, self.__angle_mapping,
                                   offset=-100)
                 print('Gcode: %s' % g)
                 gcode_sender.send_immediate(g)

@@ -102,8 +102,9 @@ class ReflectionAppThreaded:
         detected_object: DetectedObject = self.__face_detecting_grabber.read()
         prn_result: PRNResult = self.__threaded_prnet.read()
 
+        detected_face_area = detected_object.detected_face.detected_face_area
         if detected_object.detected_face.is_face_detected:
-            self.__sfad.update_next_searching_frame(detected_object.detected_face.detected_face_area)
+            self.__sfad.update_next_searching_frame(detected_face_area)
             self.__threaded_prnet.update_source_frame(self.__face_detecting_grabber.read().output_frame)
         else:
             self.__sfad.update_not_found_face()
