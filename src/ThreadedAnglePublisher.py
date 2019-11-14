@@ -37,17 +37,19 @@ class ThreadedAnglePublisher:
 
             gcode_sender.send_immediate('$X')
             gcode_sender.send_immediate('$H')
+            gcode_sender.send_immediate('X0')
 
             # Stream g-code to grbl
             while not self.stopped:
                 face_angle = self.__face_angle
                 print('Input: %s' % face_angle)
                 g = convert_angle(face_angle, self.__angle_limit, self.__angle_mapping,
-                                  offset=0)
+                                  offset=-100)
                 print('Gcode: %s' % g)
                 gcode_sender.send_immediate(g)
 
-                self.__event.wait()
+                if not self.__event.wait(6):
+                    self.__face_angle = 0
                 self.__event.clear()
 
     def stop(self):
@@ -55,8 +57,9 @@ class ThreadedAnglePublisher:
         self.__thread.join()
 
     def update_angle(self, face_angle: float):
-        self.__face_angle = face_angle
-        self.__event.set()
+        if abs(face_angle - self.__face_angle) > 0.1:
+            self.__face_angle = face_angle
+            self.__event.set()
 
 
 def convert_angle(angle, limits, mapping, offset=0):
