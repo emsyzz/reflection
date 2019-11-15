@@ -39,7 +39,7 @@ class ReflectionAppThreaded:
 
     def __init__(self, source_device="/dev/video0", output_device="/dev/video1", rotation: int = None,
                  height: int = None, width: int = None, is_gray: bool = False,
-                 serial_device: str = None):
+                 serial_device: str = None, enable_projection_angle: bool = False):
         self.__is_gray = is_gray
         self.__serial_device = serial_device
         self.__prn = prnet.PRN(is_dlib=False)
@@ -81,7 +81,8 @@ class ReflectionAppThreaded:
                                                                  output_device).start()
 
         if self.__serial_device is not None:
-            self.__threaded_angle_publisher = ThreadedAnglePublisher(serial_device, (-0.6, 0.6), (-100, 100)).start()
+            self.__threaded_angle_publisher = ThreadedAnglePublisher(serial_device, (-0.6, 0.6), (-100, 100),
+                                                                     enable_projection_angle).start()
 
     def loop(self):
         frame_id = self.__image_grabber.read_frame_id()
@@ -235,6 +236,12 @@ class ReflectionAppThreaded:
                or (os.environ['DEBUG'] == "1" and self.__windows_shower.stopped)
 
 
-os.environ['DEBUG'] = "1"
+os.environ['DEBUG'] = "0"
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-ReflectionAppThreaded("/dev/video0", "/dev/video2", rotation=cv2.ROTATE_90_CLOCKWISE, is_gray=False, serial_device='/dev/ttyUSB0').start()
+ReflectionAppThreaded(source_device="/dev/video0",
+                      output_device="/dev/video2",
+                      rotation=cv2.ROTATE_90_CLOCKWISE,
+                      is_gray=False,
+                      serial_device='/dev/ttyUSB0',
+                      enable_projection_angle=False
+                      ).start()

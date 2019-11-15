@@ -18,7 +18,8 @@ class ThreadedAnglePublisher:
     original_splash_target: list
 
     def __init__(self, output_serial_device: str, angle_limit: tuple,
-                 angle_mapping: tuple):
+                 angle_mapping: tuple, enable_projection_angle: bool):
+        self.enable_projection_angle = enable_projection_angle
         self.__output_serial_device = output_serial_device
         self.__face_angle = 0.0
         self.__angle_limit = angle_limit
@@ -32,12 +33,14 @@ class ThreadedAnglePublisher:
         return self
 
     def publish(self):
-        splash_sender = SplashSender()
-        original_eye = splash_sender.send_immediate("getObjectAttribute?Camera&eye")
-        original_target = splash_sender.send_immediate("getObjectAttribute?Camera&target")
+        if self.enable_projection_angle:
+            splash_sender = SplashSender()
+            original_eye = splash_sender.send_immediate("getObjectAttribute?Camera&eye")
+            original_target = splash_sender.send_immediate("getObjectAttribute?Camera&target")
 
-        original_eye_str = "&".join(map(str, original_eye))
-        original_target_str = "&".join(map(str, original_target))
+            original_eye_str = "&".join(map(str, original_eye))
+            original_target_str = "&".join(map(str, original_target))
+
         # Open grbl serial port
         with serial.Serial(self.__output_serial_device, 115200) as s:
             gcode_sender = GCodeSender(s).start()
@@ -62,9 +65,11 @@ class ThreadedAnglePublisher:
 
                 face_angles = "&".join(map(str, [str(face_angle), 0, 0]))
                 around_point = "&".join(map(str, [0, 0, 0]))
-                splash_sender.send_immediate(
-                    f"rotateAroundPointFixed?Camera&null&{face_angles}&{around_point}&{original_eye_str}&{original_target_str}"
-                )
+
+                if self.enable_projection_angle:
+                    splash_sender.send_immediate(
+                        f"rotateAroundPointFixed?Camera&null&{face_angles}&{around_point}&{original_eye_str}&{original_target_str}"
+                    )
 
                 if not self.__event.wait(6):
                     self.__face_angle = 0
