@@ -35,14 +35,12 @@ class ReflectionAppThreaded:
     __threaded_prnet: ThreadedPRNet
     __threaded_image_publisher: ThreadedImagePublisher
     __threaded_angle_publisher: ThreadedAnglePublisher
-    __prn: prnet.PRN
 
     def __init__(self, source_device="/dev/video0", output_device="/dev/video1", rotation: int = None,
                  height: int = None, width: int = None, is_gray: bool = False,
                  serial_device: str = None):
         self.__is_gray = is_gray
         self.__serial_device = serial_device
-        self.__prn = prnet.PRN(is_dlib=False)
         self.__stream_width, self.__stream_height = self.get_video_capturer_dimensions(source_device, rotation, height,
                                                                                        width)
         self.__sfad = SearchingFaceAreaProvider(self.__stream_width, self.__stream_height)
@@ -70,9 +68,7 @@ class ReflectionAppThreaded:
             self.__image_grabber.read()
         )
 
-        self.__threaded_prnet = ThreadedPRNet(
-            self.__prn
-        )
+        self.__threaded_prnet = ThreadedPRNet()
 
         self.__face_detecting_grabber.start(self.__image_grabber.read())
         self.__threaded_prnet.start()

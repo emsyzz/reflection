@@ -110,3 +110,5 @@ venv.bak/
 .idea/*
 !.idea/runConfigurations
 samples/
+
+venv*/
