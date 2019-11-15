@@ -151,6 +151,13 @@ class ReflectionAppThreaded:
     def __scale_cropped_face_image(self, source_frame: np.ndarray, height=CROPPED_FACE_BASE_HEIGHT,
                                    width=CROPPED_FACE_BASE_WIDTH):
         original_height, original_width, colors = source_frame.shape
+        if original_height == original_width:
+            return cv2.resize(
+                source_frame,
+                (width, height),
+                interpolation=cv2.INTER_LINEAR
+            )
+
         if original_height > original_width:
             height_percent = (height / float(original_height))
             new_width_size = int(float(original_width) * float(height_percent))

@@ -46,7 +46,7 @@ def grab(
 
         source_frame: np.ndarray = __source_frame.reshape(
             __source_frame_shape
-        )
+        ).astype(np.uint8)
 
         [h, w, c] = source_frame.shape
 
@@ -77,12 +77,12 @@ def grab(
         try:
             __face_angle = face_angle_x
             __textured_face = extract_texture((source_frame / 255).astype(np.float32), prn_pos)
-            __face_texture = np.ctypeslib.as_ctypes(__textured_face.reshape(-1))
+            __face_texture = np.ctypeslib.as_ctypes(__textured_face.flatten())
 
             if is_debug:
-                __landmarked_face = plot_kpt(source_frame.copy(), kpt)
-                __face_with_landmarks = np.ctypeslib.as_ctypes(__landmarked_face.get().reshape(-1))
-                __face_with_pose = np.ctypeslib.as_ctypes(plot_pose_box(source_frame.copy().reshape(-1), camera_matrix, kpt))
+                __landmarked_face = plot_kpt(source_frame, kpt)
+                __face_with_landmarks = np.ctypeslib.as_ctypes(__landmarked_face.flatten())
+                __face_with_pose = np.ctypeslib.as_ctypes(plot_pose_box(source_frame.flatten(), camera_matrix, kpt))
         except Exception as err:
             print("PRNET ERROR: " + str(err))
             raise err
@@ -94,7 +94,7 @@ def grab(
             if is_debug:
                 move_ndarray_to_raw_array(output_face_with_landmarks, __face_with_landmarks)
                 move_ndarray_to_raw_array(output_face_with_pose, __face_with_pose)
-                output_face_with_shape[:] = __landmarked_face.get().shape
+                output_face_with_shape[:] = __landmarked_face.shape
             output_result_id.value += 1
 
         counter += 1
