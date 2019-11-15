@@ -1,234 +1,65 @@
+// Splash configuration file
+// Exported with Blender Splash add-on
 {
-   "description" : "splashConfiguration",
-   "scenes" : {
-      "GPU" : {
-         "display" : 0,
-         "links" : [
-            [ "Object", "gui" ],
-            [ "Object", "Camera" ],
-            [ "gui", "Gui" ],
-            [ "Mesh", "Object" ],
-            [ "Image", "Object" ],
-            [ "Camera", "Window" ],
-            [ "Window_Camera_warp", "Window" ],
-            [ "Camera", "Window_Camera_warp" ]
-         ],
-         "objects" : {
-            "Camera" : {
-               "16bits" : [ 1 ],
-               "activateColorLUT" : [ 0 ],
-               "alias" : [ "Camera" ],
-               "blendPrecision" : [ 0.10000000149011612 ],
-               "blendWidth" : [ 0.05000000074505806 ],
-               "brightness" : [ 1 ],
-               "buffer" : [ 0 ],
-               "colorMixMatrix" : [
-                  [
-                     0.16619400680065155,
-                     2.4802982818549262e-43,
-                     0,
-                     -2.6704757832004616e-36,
-                     4.5587041641414949e-41,
-                     -2.6705446598225801e-36,
-                     4.5587041641414949e-41,
-                     7.4936224398061924e+31,
-                     1.7752508977062885e+28
-                  ]
-               ],
-               "colorTemperature" : [ 6500 ],
-               "contrast" : [ 1 ],
-               "eye" : [ 0.001751970499753952, -13.965608596801758, 0.23143494129180908 ],
-               "far" : [ 100 ],
-               "fov" : [ 28.841547012329102 ],
-               "getReprojectionError" : [ 0 ],
-               "grabMipmapLevel" : [ -1 ],
-               "hide" : [ 0 ],
-               "multisampling" : [ 0 ],
-               "near" : [ 0.10000000149011612 ],
-               "principalPoint" : [ 0.5, 0.5 ],
-               "priorityShift" : [ 0 ],
-               "saturation" : [ 1 ],
-               "savable" : [ 1 ],
-               "size" : [ 1920, 1080 ],
-               "target" : [ 0.001751970499753952, -12.965608596801758, 0.23143507540225983 ],
-               "timestamp" : [ -1989210608 ],
-               "type" : "camera",
-               "up" : [ 0, -1.3435885648505064e-07, 1.0000001192092896 ],
-               "weightedCalibrationPoints" : [ 1 ]
-            },
-            "Gui" : {
-               "alias" : [ "Gui" ],
-               "decorated" : [ 1 ],
-               "gamma" : [ 2.2000000476837158 ],
-               "layout" : [ 0, 1, 2, 3 ],
-               "position" : [ 0, 0 ],
-               "presentationDelay" : [ -1988699455 ],
-               "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
-               "size" : [ 732, 932 ],
-               "srgb" : [ 1 ],
-               "timestamp" : [ 0 ],
-               "type" : "window"
-            },
-            "Image" : {
-               "alias" : [ "Image" ],
-               "captureSize" : [ 1920, 1080 ],
-               "device" : [ "/dev/video2" ],
-               "doCapture" : [ 0 ],
-               "file" : [ "" ],
-               "flip" : [ 1 ],
-               "flop" : [ 0 ],
-               "index" : [ 0 ],
-               "pattern" : [ 0 ],
-               "pixelFormat" : [ "YUYV" ],
-               "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
-               "sourceFormat" : [ "" ],
-               "srgb" : [ 1 ],
-               "timestamp" : [ -1 ],
-               "type" : "image_v4l2"
-            },
-            "Mesh" : {
-               "alias" : [ "Mesh" ],
-               "file" : [ "splash_Face cloth.obj" ],
-               "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
-               "timestamp" : [ -2002742132 ],
-               "type" : "mesh"
-            },
-            "Object" : {
-               "alias" : [ "Object" ],
-               "color" : [ 1, 1, 1, 1 ],
-               "fill" : [ "texture" ],
-               "normalExponent" : [ 0 ],
-               "position" : [ 0, 0, 0 ],
-               "priorityShift" : [ 0 ],
-               "rotation" : [ 0, 0, 0 ],
-               "savable" : [ 1 ],
-               "scale" : [ 1, 1, 1 ],
-               "sideness" : [ 0 ],
-               "timestamp" : [ -1989210608 ],
-               "type" : "object"
-            },
-            "Window" : {
-               "alias" : [ "Window" ],
-               "decorated" : [ 0 ],
-               "gamma" : [ 2.2000000476837158 ],
-               "layout" : [ 0, 1, 2, 3 ],
-               "position" : [ 0, 0 ],
-               "presentationDelay" : [ 511554 ],
-               "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
-               "size" : [ 1920, 1080 ],
-               "srgb" : [ 1 ],
-               "textureList" : [ "Window_Camera_warp" ],
-               "timestamp" : [ -1989210608 ],
-               "type" : "window"
-            },
-            "Window_Camera_warp" : {
-               "alias" : [ "Window_Camera_warp" ],
-               "buffer" : [ 0 ],
-               "grabMipmapLevel" : [ -1 ],
-               "patchControl" : [
-                  4,
-                  4,
-                  [ -1, -1 ],
-                  [ -0.33333331346511841, -1 ],
-                  [ 0.33333337306976318, -1 ],
-                  [ 1, -1 ],
-                  [ -1, -0.33333331346511841 ],
-                  [ -0.33333331346511841, -0.33333331346511841 ],
-                  [ 0.33333337306976318, -0.33333331346511841 ],
-                  [ 1, -0.33333331346511841 ],
-                  [ -1, 0.33333337306976318 ],
-                  [ -0.33333331346511841, 0.33333337306976318 ],
-                  [ 0.33333337306976318, 0.33333337306976318 ],
-                  [ 1, 0.33333337306976318 ],
-                  [ -1, 1 ],
-                  [ -0.33333331346511841, 1 ],
-                  [ 0.33333337306976318, 1 ],
-                  [ 1, 1 ]
-               ],
-               "patchResolution" : [ 64 ],
-               "patchSize" : [ 4, 4 ],
-               "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
-               "size" : [ 1920, 1080 ],
-               "timestamp" : [ -1989210608 ],
-               "type" : "warp"
-            },
-            "blender" : {
-               "alias" : [ "blender" ],
-               "mode" : [ "none" ],
-               "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
-               "timestamp" : [ 0 ],
-               "type" : "blender"
-            },
-            "colorCalibrator" : {
-               "alias" : [ "colorCalibrator" ],
-               "colorSamples" : [ 5 ],
-               "detectionThresholdFactor" : [ 1 ],
-               "equalizeMethod" : [ 2 ],
-               "hdrStep" : [ 1 ],
-               "imagePerHDR" : [ 1 ],
-               "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
-               "timestamp" : [ 0 ],
-               "type" : "colorCalibrator"
-            },
-            "dragndrop" : {
-               "alias" : [ "dragndrop" ],
-               "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
-               "timestamp" : [ 0 ],
-               "type" : "dragndrop",
-               "updateRate" : [ 10 ]
-            },
-            "gui" : {
-               "alias" : [ "gui" ],
-               "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
-               "timestamp" : [ 0 ],
-               "type" : "gui"
-            },
-            "joystick" : {
-               "alias" : [ "joystick" ],
-               "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
-               "timestamp" : [ 0 ],
-               "type" : "joystick",
-               "updateRate" : [ 100 ]
-            },
-            "keyboard" : {
-               "alias" : [ "keyboard" ],
-               "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
-               "timestamp" : [ 0 ],
-               "type" : "keyboard",
-               "updateRate" : [ 100 ]
-            },
-            "mouse" : {
-               "alias" : [ "mouse" ],
-               "priorityShift" : [ 0 ],
-               "savable" : [ 1 ],
-               "timestamp" : [ 0 ],
-               "type" : "mouse",
-               "updateRate" : [ 100 ]
-            }
-         },
-         "swapInterval" : [ 1 ],
-         "threadedTextureUpload" : [ 1 ]
-      }
-   },
-   "version" : "0.7.21",
-   "world" : {
-      "clock" : [ -1988708709 ],
-      "clockDeviceName" : [ "" ],
-      "configurationPath" : [ "/home/atspuulgs/PycharmProjects/reflection/assets/" ],
-      "forceRealtime" : [ 0 ],
-      "framerate" : [ 60 ],
-      "looseClock" : [ 0 ],
-      "mediaPath" : [ "/home/atspuulgs/PycharmProjects/reflection/assets/" ]
-   }
+    "description" : "splashConfiguration",
+    "world" : {
+        "framerate" : 60
+    },
+    "scenes" : [
+        {
+            "name" : "GPU",
+            "display" : 0,
+            "swapInterval" : 1
+        }
+    ],
+    "GPU" : {
+        "Gui" : {
+            "type" : "window",
+            "decorated" : 1,
+            "position" : [0.0, 0.0],
+            "size" : [732, 932]
+        },
+        "Window" : {
+            "type" : "window",
+            "decorated" : 0,
+            "fullscreen" : -1,
+            "position" : [0, 0],
+            "size" : [1920, 1080],
+            "srgb" : 1,
+            "layout" : [0]
+        },
+        "Camera" : {
+            "type" : "camera",
+            "eye" : [0.001751970499753952, -13.965608596801758, 0.23143494129180908],
+            "target" : [0.001751970499753952, -12.965608596801758, 0.23143507540225983],
+            "up" : [0.0, -1.3435885648505064e-07, 1.0000001192092896],
+            "fov" : 28.841546110078532,
+            "principalPoint" : [0.5, 0.5],
+            "size" : [1920, 1080]
+        },
+        "Object" : {
+            "type" : "object",
+            "color" : [1.0, 1.0, 1.0, 1.0],
+            "sideness" : 0
+        },
+        "Image" : {
+            "type" : "image",
+            "file" : "/home/manu/src/splash/data/color_map.png",
+            "flip" : 0,
+            "flop" : 0,
+            "srgb" : 1
+        },
+        "Mesh" : {
+            "type" : "mesh",
+            "file" : "splash_Face cloth.obj"
+        },
+        "links" : [
+            ["Gui", "GPU"],
+            ["Window", "GPU"],
+            ["Camera", "Window"],
+            ["Object", "Camera"],
+            ["Image", "Object"],
+            ["Mesh", "Object"]
+        ]
+    }
 }
