@@ -105,7 +105,8 @@ def grab(
 
 
 def extract_texture(new_face: np.ndarray, prn_pos: any):
-    new_texture = cv2.remap(new_face, prn_pos[:, :, :2].astype(np.float32), None, interpolation=cv2.INTER_AREA,
+    new_texture = cv2.remap(new_face, cv2.resize(prn_pos[:, :, :2].astype(np.float32), (992, 992),
+                                                 interpolation=cv2.INTER_LINEAR), None, interpolation=cv2.INTER_AREA,
                             borderMode=cv2.BORDER_CONSTANT, borderValue=(0))
 
     return (new_texture * 255).astype(np.uint8)
