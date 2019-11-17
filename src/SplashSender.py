@@ -12,3 +12,4 @@ class SplashSender:
             return r.json()  # j is now a python dict object
         except Exception as err:
             print("Cannot send to Splash: " + str(err))
+            return {}

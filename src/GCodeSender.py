@@ -63,8 +63,8 @@ class GCodeSender:
         with self.__write_lock:
             print("Send: %s" % command)
             self.__serial_device.write(bytes('%s\n' % command, 'ascii'))
-            inp = self.__serial_device.readline()
-            print("Receive: %s" % inp)
+            #inp = self.__serial_device.readline()
+            #print("Receive: %s" % inp)
 
     def send(self, command):
         self.__command = GCodeCommand(command, False)

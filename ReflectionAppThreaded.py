@@ -236,12 +236,12 @@ class ReflectionAppThreaded:
                or (os.environ['DEBUG'] == "1" and self.__windows_shower.stopped)
 
 
-os.environ['DEBUG'] = "0"
+os.environ['DEBUG'] = "1"
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 ReflectionAppThreaded(source_device="/dev/video0",
                       output_device="/dev/video2",
-                      rotation=cv2.ROTATE_90_CLOCKWISE,
+                      rotation=None,
                       is_gray=False,
                       serial_device='/dev/ttyUSB0',
-                      enable_projection_angle=False
+                      enable_projection_angle=True
                       ).start()
