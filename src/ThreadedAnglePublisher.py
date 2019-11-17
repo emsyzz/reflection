@@ -18,16 +18,21 @@ class ThreadedAnglePublisher:
     original_splash_eye: list
     original_splash_target: list
 
-    def __init__(self, output_serial_device: str, angle_limit: tuple,
-                 angle_mapping: tuple, enable_projection_angle: bool):
+    def __init__(self, output_serial_device: str, enable_projection_angle: bool, angle_limit: tuple,
+                 angle_mapping: tuple, max_speed: float, acceleration: float, angle_tolerance: float,
+                 animation_delay: float):
         self.enable_projection_angle = enable_projection_angle
         self.__output_serial_device = output_serial_device
         self.__face_angle = 0.0
         self.__old_angle = 0.0
-        self.__max_velocity = 1.0  # units per second
-        self.__acceleration = 1.0  # units per second^2
         self.__angle_limit = angle_limit
         self.__angle_mapping = angle_mapping
+        self.__max_velocity = max_speed  # units per second
+        self.__acceleration = acceleration  # units per second^2
+        self.__angle_tolerance = angle_tolerance
+        self.__animation_delay = animation_delay
+        self.__direction = None
+        self.__swap_direction = False
 
     def start(self):
         self.__event = threading.Event()
@@ -62,40 +67,57 @@ class ThreadedAnglePublisher:
             while not self.stopped:
                 old_angle = self.__old_angle
                 face_angle = self.__face_angle
-                print('Input: %s' % face_angle)
-                g = convert_angle(-face_angle, self.__angle_limit, self.__angle_mapping,
-                                  offset=-100)
-                print('Gcode: %s' % g)
+                print('TAP: Input: %s' % face_angle)
+                g = convert_angle(-face_angle, self.__angle_limit, self.__angle_mapping, offset=-100)
+
+                if self.__swap_direction:
+                    # add halt to Gcode if direction is changed
+                    print("TAP: Swap movement direction")
+                    g = "!%s" % g
+                    self.__swap_direction = False
+
+                print('TAP: Gcode: %s' % g)
                 gcode_sender.send_immediate(g)
 
                 if self.enable_projection_angle:
                     start_time = time.time()
-                    duration = movement_duration(
-                        abs(face_angle - old_angle),
-                        self.__max_velocity,
-                        0,
-                        self.__acceleration
-                    )
-                    print("Movement duration: %0.3f" % duration)
+                    distance = abs(face_angle - old_angle)
 
-                    current_time = time.time() - start_time
-                    while current_time < duration:
-                        current_time = time.time() - start_time
-                        angle_at_time = calculate_position(
-                            current_time,
-                            old_angle,
-                            face_angle,
-                            self.__max_velocity,
-                            0,
-                            self.__acceleration
-                        )
-                        print("Angle at %.3f: %.3f" % (current_time, angle_at_time))
-                        face_angles = "&".join(map(str, [str(angle_at_time), 0, 0]))
+                    if distance > 0.0:
+                        print("TAP: Moving from %.3f to %.3f" % (old_angle, face_angle))
+                        print("TAP: Movement distance: %.3f" % distance)
+
+                        traveled_distance = 0.0
+                        while traveled_distance < distance:
+                            current_time = time.time() - start_time
+                            traveled_distance = calculate_distance(
+                                current_time,
+                                distance,
+                                self.__max_velocity,
+                                0,
+                                self.__acceleration
+                            )
+
+                            print("TAP: Offset at %.3f: %.3f" % (current_time, traveled_distance))
+
+                            if self.__face_angle > self.__old_angle:
+                                angle_at_time = self.__old_angle + traveled_distance
+                            elif self.__face_angle < self.__old_angle:
+                                angle_at_time = self.__old_angle - traveled_distance
+
+                            print("TAP: Angle at %.3f: %.3f" % (current_time, angle_at_time))
+                            face_angles = "&".join(map(str, [str(angle_at_time), 0, 0]))
+                            around_point = "&".join(map(str, [0, 0, 0]))
+                            # splash_sender.send_immediate(
+                            #     f"rotateAroundPointFixed?Camera&null&{face_angles}&{around_point}&{original_eye_str}&{original_target_str}"
+                            # )
+                            time.sleep(self.__animation_delay)  # 100 ms delay
+                    else:
+                        face_angles = "&".join(map(str, [str(face_angle), 0, 0]))
                         around_point = "&".join(map(str, [0, 0, 0]))
                         splash_sender.send_immediate(
                             f"rotateAroundPointFixed?Camera&null&{face_angles}&{around_point}&{original_eye_str}&{original_target_str}"
                         )
-                        time.sleep(0.01)  # 10 ms delay
 
                 if not self.__event.wait(6):
                     self.__face_angle = 0.0
@@ -107,7 +129,11 @@ class ThreadedAnglePublisher:
         self.__thread.join()
 
     def update_angle(self, face_angle: float):
-        if abs(face_angle - self.__face_angle) > 0.1:
+        distance = abs(face_angle - self.__face_angle)
+        if distance > self.__angle_tolerance:
+            direction = face_angle > self.__face_angle
+            self.__swap_direction = self.__direction is not None and direction != self.__direction
+            self.__direction = direction
             self.__old_angle = self.__face_angle
             self.__face_angle = face_angle
             self.__event.set()
@@ -121,47 +147,39 @@ def tim_acc(vel_max, vel_ini, acc):
     return (vel_max - vel_ini) / acc  # time at which max speed is reached
 
 
-def movement_duration(dis, vel_max, vel_ini, acc):
-    return (tim_acc(vel_max, vel_ini, acc) * 2) + (dis * vel_max)
-
-
-def calculate_position(t, d_ini, d_end, v_max, v_ini, a):
+def calculate_distance(t, d_end, v_max, v_ini, a):
     # calculate traveled distance at given time
 
-    print("Traveling from %.2f to %.2f" % (d_ini, d_end))
-
     t_acc = tim_acc(v_max, v_ini, a)  # time at which max speed is reached
-
     d_acc = dis_acc(v_ini, a, t_acc)  # distance at which max speed is reached
-    d_dec = d_end - d_acc  # distance at which deceleration starts
-    d_crs = d_dec - d_acc  # cruise distance
-    #print("Distance at which decelerates - %f" % d_dec)
-    #print("Cruise distance - %f" % d_crs)
 
-    t_crs = d_crs * v_max  # time spent in cruise
-    t_dec = t_crs + t_acc  # time at witch deceleration starts
-
-    #print("Distance after acceleration - %f" % d_acc)
-    #print("Time it takes to accelerate - %f" % t_acc)
-
-    if t < t_acc:
-        # we are currently accelerating
+    # if distance to end is smaller than acceleration distance
+    # then return only how far it could have gotten
+    if d_acc > d_end:
         d_cur = dis_acc(v_ini, a, t)
-    elif t > t_dec:
-        # we are currently decelerating
-        d_cur = d_dec + (d_acc - dis_acc(v_max, a, t))
     else:
-        # we are at max speed
-        d_cur = d_acc + (v_max * (t - t_acc))
+        d_dec = d_end - d_acc  # distance at which deceleration starts
+        d_crs = d_dec - d_acc  # cruise distance
 
-    if d_cur < d_end:
+        t_crs = d_crs * v_max  # time spent in cruise
+        t_dec = t_crs + t_acc  # time at witch deceleration starts
+
+        if t < t_acc:
+            # we are currently accelerating
+            d_cur = dis_acc(v_ini, a, t)
+        elif t > t_dec:
+            # we are currently decelerating
+            d_cur = d_dec + (d_acc - dis_acc(v_max, a, t))
+        else:
+            # we are at max speed
+            d_cur = d_acc + (v_max * (t - t_acc))
+
+    if d_end > d_cur > 0.0:
         # not at end yet
         d_cur = d_cur
     else:
         # reached end
         d_cur = d_end
-
-    #print("Distance traveled at given time - %f" % d_cur)
 
     return d_cur
 

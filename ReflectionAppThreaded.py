@@ -81,8 +81,16 @@ class ReflectionAppThreaded:
                                                                  output_device).start()
 
         if self.__serial_device is not None:
-            self.__threaded_angle_publisher = ThreadedAnglePublisher(serial_device, (-0.6, 0.6), (-100, 100),
-                                                                     enable_projection_angle).start()
+            self.__threaded_angle_publisher = ThreadedAnglePublisher(
+                serial_device,
+                enable_projection_angle,
+                (-0.6, 0.6),  # angle limits
+                (-100, 100),  # axis mapping
+                1.0,  # max speed
+                1.0,  # acceleration
+                0.1,  # angle tolerance
+                0.1  # animation delay
+            ).start()
 
     def loop(self):
         frame_id = self.__image_grabber.read_frame_id()
