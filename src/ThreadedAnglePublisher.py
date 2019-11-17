@@ -108,9 +108,9 @@ class ThreadedAnglePublisher:
                             print("TAP: Angle at %.3f: %.3f" % (current_time, angle_at_time))
                             face_angles = "&".join(map(str, [str(angle_at_time), 0, 0]))
                             around_point = "&".join(map(str, [0, 0, 0]))
-                            # splash_sender.send_immediate(
-                            #     f"rotateAroundPointFixed?Camera&null&{face_angles}&{around_point}&{original_eye_str}&{original_target_str}"
-                            # )
+                            splash_sender.send_immediate(
+                                f"rotateAroundPointFixed?Camera&null&{face_angles}&{around_point}&{original_eye_str}&{original_target_str}"
+                            )
                             time.sleep(self.__animation_delay)  # 100 ms delay
                     else:
                         face_angles = "&".join(map(str, [str(face_angle), 0, 0]))
